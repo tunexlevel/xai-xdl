@@ -1,0 +1,23 @@
+data_loader.py – for loading the reaction dataset
+
+utils.py – for SMILES tokenization
+
+model.py – for defining the Seq2Seq model
+
+train.py – for training your model
+
+main.py – for simple testing/inference
+
+second method
+
+chem-reaction-mvp/
+│
+├── data/
+│   └── uspto50k/       ← put your `train.txt`, `test.txt`, `valid.txt` here
+│
+├── data_loader.py      ← loads and formats the data
+├── utils.py            ← tokenizer, helpers
+├── model.py            ← GRU or Transformer-based model
+├── train.py            ← training loop
+├── predict.py          ← test inference
+└── requirements.txt    ← optional: for easy setup later
