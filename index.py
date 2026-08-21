@@ -23,29 +23,7 @@ def health():
         'status': 'healthy',
         'message': 'The XAI XDL API is up and running!'
     }
-    
-@app.route('/product/<product_smiles>/like')
-def product_like(product_smiles):
-    return {
-        'status': 'success',
-        'product_smiles': product_smiles,
-        'message': 'You liked the predicted product!'
-    } 
-    
-@app.route('/product/<product_smiles>/dislike')
-def product_dislike(product_smiles):
-    return {
-        'status': 'success',
-        'product_smiles': product_smiles,
-        'message': 'You disliked the predicted product!'
-    }    
-    
-@app.route('/feedback', methods=['POST'])
-def feedback():
-    return {
-        'status': 'success',
-        'message': 'Thank you for your feedback!'
-    }
+ 
 
     
 if __name__ == "__main__":

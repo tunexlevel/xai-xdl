@@ -1,11 +1,20 @@
+import os
+import sys
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+os.chdir(ROOT)
+
 import torch
 import torch.nn as nn
-import json
 from torch.utils.data import DataLoader
-from data_loader import load_uspto_file
-from utils import build_vocab
-from dataset import ReactionDataset
-from model_1 import Seq2SeqTransformer
+from helper.data_loader import load_uspto_file
+from helper.utils import build_vocab
+from helper.dataset import ReactionDataset
+from mod.model import Seq2SeqTransformer
 from tqdm import tqdm
 
 # Hyperparameters
@@ -16,7 +25,7 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 1e-3
 PAD_TOKEN = "<pad>"
-FILE_PATH = "data/uspto50k/raw_train.csv"
+FILE_PATH = ROOT / "data" / "uspto50k" / "processed.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
@@ -31,10 +40,10 @@ all_smiles = df['reactants'].tolist() + df['products'].tolist()
 token2idx, idx2token = build_vocab(all_smiles)
 pad_idx = token2idx[PAD_TOKEN]
 
-# Save vocab
-with open("token2idx.json", "w") as f:
+# Save vocabulary
+with open(ROOT / "tokens" / "token2idx.json", "w") as f:
     json.dump(token2idx, f)
-with open("idx2token.json", "w") as f:
+with open(ROOT / "tokens" / "idx2token.json", "w") as f:
     json.dump(idx2token, f)
 
 # Dataset & DataLoader
@@ -95,4 +104,4 @@ for epoch in range(EPOCHS):
         print("Perfect accuracy achieved, stopping training.")
         break
 # Save model
-torch.save(model.state_dict(), "reaction_model.pt")
+torch.save(model.state_dict(), ROOT / "pt" / "reaction_model.pt")

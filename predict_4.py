@@ -45,7 +45,7 @@ model = Seq2SeqTransformer(
 ).to(device)
 
 try:
-    model.load_state_dict(torch.load("reaction_model.pt", map_location=device))
+    model.load_state_dict(torch.load("pt/reaction_model.pt", map_location=device))
     model.eval()
     print("✅ Model loaded successfully.")
 except FileNotFoundError:
