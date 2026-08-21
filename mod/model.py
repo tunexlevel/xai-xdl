@@ -99,51 +99,102 @@ class Seq2SeqTransformer(nn.Module):
             last_layer_attn = None
             
             for layer in self.transformer.decoder.layers:
-                # We need the cross-attention weights (multihead_attn)
-                # which aligns 'tgt' (queries) to 'memory' (keys/values from encoder)
-                
-                # Standard self-attention
                 output = layer.self_attn(output, output, output, 
                                          attn_mask=tgt_mask, 
                                          key_padding_mask=tgt_padding_mask)[0]
                 output = layer.dropout1(output)
-                output = layer.norm1(output + tgt_emb) # Simplification of residual
+                output = layer.norm1(output + tgt_emb)
                 
-                # Cross-attention (THIS IS WHAT YOU WANT FOR DEBUGGING)
-                # Returns (attn_output, attn_weights)
                 query = output
                 output, attn_weights = layer.multihead_attn(
                     query, memory, memory,
                     key_padding_mask=src_padding_mask,
-                    need_weights=True # <--- Crucial
+                    need_weights=True
                 )
                 last_layer_attn = attn_weights 
                 
                 output = layer.dropout2(output)
                 output = layer.norm2(output + query)
                 
-                # Feed forward
                 ff_output = layer.linear2(layer.dropout(layer.activation(layer.linear1(output))))
                 output = layer.norm3(output + ff_output)
 
-            # Store attention from the last step (for the last token generated)
             all_attention_weights.append(last_layer_attn)
-            
-            # Final linear layer
             prob = self.fc_out(output[:, -1])
             _, next_word = torch.max(prob, dim=1)
-            
             next_word = next_word.unsqueeze(1)
             ys = torch.cat([ys, next_word], dim=1)
             
             if (next_word == eos_idx).all():
                 break
                 
-        # Stack weights: (batch, num_steps, src_len) 
-        # specifically looking at the attention the LAST token paid to the source
         combined_attn = torch.cat([step[:, -1:, :] for step in all_attention_weights], dim=1)
-        
         return ys, combined_attn
+
+    def beam_search(self, src, sos_idx, eos_idx, beam_width=4, max_len=120):
+        candidates = self.beam_search_candidates(src, sos_idx, eos_idx, beam_width=beam_width, max_len=max_len)
+        if not candidates:
+            return torch.tensor([], dtype=torch.long, device=src.device)
+        best_seq = max(candidates, key=lambda x: x[1])[0]
+        if best_seq[-1].item() != eos_idx:
+            best_seq = torch.cat([best_seq, torch.tensor([eos_idx], device=src.device)], dim=0)
+        return best_seq.unsqueeze(0)
+
+    def beam_search_candidates(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
+        device = src.device
+        src_padding_mask = (src == self.pad_idx)
+        src_emb = self.positional_encoding(self.embedding(src))
+        memory = self.transformer.encoder(src_emb, src_key_padding_mask=src_padding_mask)
+
+        beams = [(torch.tensor([sos_idx], device=device), 0.0)]
+        finished = []
+
+        for _ in range(max_len - 1):
+            candidates = []
+            for seq, score in beams:
+                if seq[-1].item() == eos_idx and seq.numel() > 1:
+                    finished.append((seq, score))
+                    continue
+
+                tgt_mask = self.generate_square_subsequent_mask(seq.size(0)).to(device)
+                tgt_padding_mask = (seq == self.pad_idx)
+                tgt_emb = self.positional_encoding(self.embedding(seq.unsqueeze(0)))
+
+                out = self.transformer.decoder(
+                    tgt_emb,
+                    memory,
+                    tgt_mask=tgt_mask,
+                    tgt_key_padding_mask=tgt_padding_mask.unsqueeze(0),
+                    memory_key_padding_mask=src_padding_mask,
+                )
+
+                logits = self.fc_out(out[:, -1])
+                log_probs = torch.log_softmax(logits, dim=-1)[0]
+                topk = torch.topk(log_probs, k=min(beam_width, log_probs.numel()))
+
+                for next_idx, next_logp in zip(topk.indices.tolist(), topk.values.tolist()):
+                    if next_idx == self.pad_idx:
+                        continue
+                    new_seq = torch.cat([seq, torch.tensor([next_idx], device=device)], dim=0)
+                    candidates.append((new_seq, score + float(next_logp)))
+
+            if not candidates:
+                break
+
+            uniq = {}
+            for seq, score in candidates:
+                key = tuple(seq.cpu().tolist())
+                if key not in uniq or score > uniq[key][1]:
+                    uniq[key] = (seq, score)
+
+            beams = sorted(uniq.values(), key=lambda x: x[1], reverse=True)[:beam_width]
+            if len(finished) >= beam_width:
+                break
+
+        all_results = finished + [(seq, score) for seq, score in beams]
+        if not all_results:
+            return []
+        return sorted(all_results, key=lambda x: x[1], reverse=True)
     
     
 # Helper class for Transformer

@@ -1,0 +1,9 @@
+!git clone --branch v2.0 https://github.com/tunexlevel/xai-xdl.git
+%cd /content/xai-xdl
+!pip install rdkit
+
+change runtime to GPU
+
+-smile to structure: https://www.arcmol.com/s01810-0
+
+-learn from: https://matlantis.com/en/resources/blog/writer/bon-cho/

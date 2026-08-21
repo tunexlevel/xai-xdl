@@ -1,5 +1,5 @@
 from flask import Flask
-from predict_4 import predict_product
+from predict.predict import predict_product
 app = Flask(__name__)
 
 @app.route('/')
