@@ -21,6 +21,6 @@ class ReactionDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        src = self.encode(row['reactants'], add_special=True)
+        src = self.encode(row['reactants'], add_special=False)
         tgt = self.encode(row['products'], add_special=True)
         return src, tgt

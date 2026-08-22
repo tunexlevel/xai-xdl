@@ -1,8 +1,17 @@
+
+#=========Prediction File============
 import torch
 import json
 import os
 import sys
 from pathlib import Path
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"The PyTorch API of nested tensors is in prototype stage.*",
+    category=UserWarning,
+)
 
 import pandas as pd
 
@@ -196,18 +205,11 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 
 # === Example ===
 if __name__ == "__main__":
-    # reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
-    # reactant = "c1ccccc1.Cl"
-    # predicted = predict_product(reactant)
-    # print(f"Reactant:  {reactant}")
-    # print(f"Predicted: {predicted}")
+    #reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
+    reactant = "C#CCO.CC(C)(Br)C(=O)O"
+    predicted = predict_product(reactant)
+    print(f"Reactant:  {reactant}")
+    print(f"Predicted: {predicted}")
 
-    metrics = test_prediction_accuracy("data/uspto50k/tested.csv", limit=40)
-    print(metrics)
-
-    # try:
-    #     mol1 = Chem.MolFromSmiles(reactant)
-    #     mol2 = Chem.MolFromSmiles(predicted)
-    #     Draw.MolsToGridImage([mol1, mol2], legends=["Reactant", "Predicted Product"]).show()
-    # except Exception as e:
-    #     print("Visualization failed:", e)
+    # metrics = test_prediction_accuracy("data/uspto50k/tested.csv", limit=40)
+    # print(metrics)
