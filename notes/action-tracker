@@ -7,3 +7,6 @@ change runtime to GPU
 -smile to structure: https://www.arcmol.com/s01810-0
 
 -learn from: https://matlantis.com/en/resources/blog/writer/bon-cho/
+
+--
+The last remaining issue is in generation quality, not in setup. The model is learning well, but the decoder in predict.py and model.py still sometimes emits weak or invalid product SMILES.

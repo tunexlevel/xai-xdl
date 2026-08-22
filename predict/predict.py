@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -14,8 +16,12 @@ IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
 
 from mod.model import Seq2SeqTransformer
 from helper.utils import tokenize_smiles
-from rdkit import Chem
+from rdkit import Chem, RDLogger
 from rdkit.Chem import Draw
+
+# Silence noisy invalid-SMILES parse warnings while the model is still being tuned.
+RDLogger.DisableLog('rdApp.error')
+RDLogger.DisableLog('rdApp.warning')
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -140,12 +146,64 @@ def predict_product(reactant_smiles, max_len=120):
 
     return best_result["smiles"]
 
+
+def _canonical_smiles(smiles):
+    if not isinstance(smiles, str):
+        return ""
+    s = smiles.strip()
+    if not s:
+        return ""
+    try:
+        mol = Chem.MolFromSmiles(s)
+        if mol is None:
+            return s
+        return Chem.MolToSmiles(mol, canonical=True)
+    except Exception:
+        return s
+
+
+def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
+    df = pd.read_csv(csv_path)
+    if "reactants" not in df.columns or "products" not in df.columns:
+        raise ValueError(f"CSV must contain 'reactants' and 'products' columns: {csv_path}")
+
+    if limit is not None:
+        df = df.head(limit)
+
+    correct = 0
+    checked = 0
+
+    for _, row in df.iterrows():
+        reactant = str(row["reactants"]).strip()
+        target = str(row["products"]).strip()
+        if not reactant or not target:
+            continue
+
+        pred = predict_product(reactant)
+        pred_canon = _canonical_smiles(pred)
+        target_canon = _canonical_smiles(target)
+
+        checked += 1
+        if pred_canon == target_canon:
+            correct += 1
+
+    accuracy_pct = (correct / checked * 100.0) if checked else 0.0
+    return {
+        "total": checked,
+        "correct": correct,
+        "accuracy_percent": accuracy_pct,
+    }
+
 # === Example ===
 if __name__ == "__main__":
-    reactant = "CI.O=C(O)c1ccc2cc[nH]c2c1"
-    predicted = predict_product(reactant)
-    print(f"Reactant:  {reactant}")
-    print(f"Predicted: {predicted}")
+    # reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
+    # reactant = "c1ccccc1.Cl"
+    # predicted = predict_product(reactant)
+    # print(f"Reactant:  {reactant}")
+    # print(f"Predicted: {predicted}")
+
+    metrics = test_prediction_accuracy("data/uspto50k/tested.csv", limit=40)
+    print(metrics)
 
     # try:
     #     mol1 = Chem.MolFromSmiles(reactant)

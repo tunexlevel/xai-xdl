@@ -61,6 +61,6 @@ def process_uspto_file(input_path, output_path, max_samples=None):
         
         
 
-file = "data/uspto50k/raw_train.csv"
+file = "data/uspto50k/raw_test.csv"
 
-process_uspto_file(file, "data/uspto50k/processed.csv", max_samples=50000)
+process_uspto_file(file, "data/uspto50k/tested.csv", max_samples=50000)
