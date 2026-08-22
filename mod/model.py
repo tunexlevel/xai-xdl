@@ -233,6 +233,44 @@ class Seq2SeqTransformer(nn.Module):
             return []
         return sorted(all_results, key=lambda x: x[1], reverse=True)
 
+    def greedy_decode(self, src, sos_idx, eos_idx, max_len=120):
+        device = src.device
+
+        # Encode source
+        src_emb = self.positional_encoding(self.embedding(src))
+        src_padding_mask = src == self.pad_idx
+
+        memory = self.transformer.encoder(
+            src_emb, src_key_padding_mask=src_padding_mask
+        )
+
+        # Start with <sos>
+        ys = torch.tensor([[sos_idx]], dtype=torch.long, device=device)
+
+        for _ in range(max_len - 1):
+
+            tgt_emb = self.positional_encoding(self.embedding(ys))
+
+            tgt_mask = self.generate_square_subsequent_mask(ys.size(1)).to(device)
+
+            output = self.transformer.decoder(
+                tgt_emb,
+                memory,
+                tgt_mask=tgt_mask,
+                memory_key_padding_mask=src_padding_mask,
+            )
+
+            logits = self.fc_out(output[:, -1, :])
+
+            # Greedy selection
+            next_token = logits.argmax(dim=-1).unsqueeze(1)
+
+            ys = torch.cat([ys, next_token], dim=1)
+
+            if next_token.item() == eos_idx:
+                break
+
+        return ys
 
 # Helper class for Transformer
 class PositionalEncoding(nn.Module):
