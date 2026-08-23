@@ -224,10 +224,10 @@ if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
     #reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
-    # reactant = "CCO"
+    reactant = "CCO"
     # reactant = "c1ccccc1.CC"
     # target = "CCC(O)c1ccc2c(c1)NC(=O)C(C)O2"
-    reactant = "Brc1cncc(Br)c1.C[O-]"
+    # reactant = "Brc1cncc(Br)c1.C[O-]"
     predicted = predict_product(reactant)
     print(f"Reactant:  {reactant}")
     print(f"Predicted: {predicted}")
