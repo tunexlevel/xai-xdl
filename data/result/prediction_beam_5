@@ -1,0 +1,24 @@
+✅ Model loaded successfully.
+Checked: 50, Correct: 26, Accuracy: 0.5200
+Checked: 100, Correct: 55, Accuracy: 0.5500
+Checked: 150, Correct: 89, Accuracy: 0.5933
+Checked: 200, Correct: 124, Accuracy: 0.6200
+Checked: 250, Correct: 147, Accuracy: 0.5880
+Checked: 300, Correct: 174, Accuracy: 0.5800
+Checked: 350, Correct: 202, Accuracy: 0.5771
+Checked: 400, Correct: 229, Accuracy: 0.5725
+Checked: 450, Correct: 253, Accuracy: 0.5622
+Checked: 500, Correct: 276, Accuracy: 0.5520
+Checked: 550, Correct: 301, Accuracy: 0.5473
+Checked: 600, Correct: 332, Accuracy: 0.5533
+Checked: 650, Correct: 356, Accuracy: 0.5477
+Checked: 700, Correct: 376, Accuracy: 0.5371
+Checked: 750, Correct: 400, Accuracy: 0.5333
+Checked: 800, Correct: 425, Accuracy: 0.5312
+Checked: 850, Correct: 448, Accuracy: 0.5271
+Checked: 900, Correct: 473, Accuracy: 0.5256
+Checked: 950, Correct: 506, Accuracy: 0.5326
+Checked: 1000, Correct: 536, Accuracy: 0.5360
+Checked: 1050, Correct: 564, Accuracy: 0.5371
+Checked: 1100, Correct: 590, Accuracy: 0.5364
+Checked: 1150, Correct: 621, Accuracy: 0.5400
