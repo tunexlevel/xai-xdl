@@ -118,7 +118,7 @@ def _syntax_score(smiles):
     return score
 
 
-def predict_product(reactant_smiles, max_len=120):
+def predict_product(reactant_smiles, max_len=120, target_smiles=None):
     model.eval()
 
     if not isinstance(reactant_smiles, str) or not reactant_smiles.strip():
@@ -135,18 +135,30 @@ def predict_product(reactant_smiles, max_len=120):
 
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
-            src_tensor, sos_idx, eos_idx, beam_width=3, max_len=max_len
+            src_tensor, sos_idx, eos_idx, beam_width=5, max_len=max_len
         )
 
-    for seq, score in beam_candidates:
-        raw_tokens = _decode_indices(seq.squeeze(0).tolist())
-        raw_smiles = "".join(raw_tokens)
-
-        valid_smiles = _valid_smiles_or_empty(raw_smiles)
-
-
-        if valid_smiles:
-            return valid_smiles
+    for rank, (seq, score) in enumerate(beam_candidates[:5], 1):
+        tokens = _decode_indices(seq.tolist())
+        smiles = "".join(tokens)
+        
+        if target_smiles is not None:
+            target_canon = _valid_smiles_or_empty(target_smiles)
+            pred_canon = _valid_smiles_or_empty(smiles)
+            if target_canon and pred_canon:
+                is_correct = target_canon == pred_canon
+                print(f"{rank}. Score: {score:.4f} | Correct: {is_correct}")
+            else:
+                print(f"{rank}. Score: {score:.4f} | Correct: N/A (invalid SMILES)")
+        else:
+            
+            valid_smiles = _valid_smiles_or_empty(smiles)
+            
+            # print(f"{rank}. Score: {score:.4f}")
+            # print(f"   SMILES: {smiles}")
+            
+            if valid_smiles:
+                return valid_smiles
 
     return ""
 
@@ -246,11 +258,12 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     #reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
     # reactant = "CCO"
-    #reactant = "C#CCO.CC(C)(Br)C(=O)O"
+    reactant = "c1ccccc1.CC"
+    # target = "CCC(O)c1ccc2c(c1)NC(=O)C(C)O2"
     # reactant = "Brc1cncc(Br)c1.C[O-]"
-    # predicted = predict_product(reactant)
-    # print(f"Reactant:  {reactant}")
-    # print(f"Predicted: {predicted}")
+    predicted = predict_product(reactant)
+    print(f"Reactant:  {reactant}")
+    print(f"Predicted: {predicted}")
 
-    metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
-    print(metrics)
+    # metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
+    # print(metrics)

@@ -10,3 +10,22 @@ change runtime to GPU
 
 --
 The last remaining issue is in generation quality, not in setup. The model is learning well, but the decoder in predict.py and model.py still sometimes emits weak or invalid product SMILES.
+
+Duplicates removed: 6295
+Remaining reactions: 133700
+
+
+| #  | Reaction                     | Reaction SMILES                      | My Model Prediction
+| -- | ---------------------------- | ------------------------------------ |------------------------------------ 
+| 1  | Methane → chloromethane      | `C.Cl>>CCl`                          | CC(C)C
+| 2  | Ethene → ethanol             | `C=C.O>>CCO`                         | CC(C)(O)O
+| 3  | Ethene → ethane              | `C=C>>CC`                            | C=CC=CC
+| 4  | Ethanol → acetaldehyde       | `CCO>>CC=O`                          | CCOCC
+| 5  | Acetic acid → methyl acetate | `CC(=O)O.COC>>CC(=O)OC`              | COC(C)=O
+| 6  | Acetic acid → ethyl acetate  | `CC(=O)O.CCO>>CC(=O)OCC`             | CCOCC(=O)OCC
+| 7  | Ethanol → ethene             | `CCO>>C=C`                           | CCOCC
+| 8  | Acetaldehyde → ethanol       | `CC=O>>CCO`                          | CC=O
+| 9  | Acetone → isopropanol        | `CC(=O)C>>CC(O)C`                    | CC(=O)C(C)O
+| 10 | Benzene → chlorobenzene      | `c1ccccc1.Cl>>Clc1ccccc1`            | Clc1ccccc1
+| 11 | Benzene → toluene            | `c1ccccc1.CC>>Cc1ccccc1`             | CCCc1ccccc1
+| 12 | Aniline → acetanilide        | `Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1` | CC(=O)Nc1ccccc1
