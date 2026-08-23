@@ -2,6 +2,7 @@ import os
 import sys
 import json
 from pathlib import Path
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -66,6 +67,9 @@ model = Seq2SeqTransformer(
 criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
+
+start_time = time.time()
+
 # Training Loop
 for epoch in range(EPOCHS):
     model.train()
@@ -105,3 +109,6 @@ for epoch in range(EPOCHS):
         break
 # Save model
 torch.save(model.state_dict(), ROOT / "pt" / "reaction_model.pt")
+
+end_time = time.time()
+print(f"Training completed in {end_time - start_time:.2f} seconds.")
