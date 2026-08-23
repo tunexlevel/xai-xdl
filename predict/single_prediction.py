@@ -1,10 +1,20 @@
-# =========Prediction File============
+import time
 import torch
 import json
-import os
 import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+    
 import warnings
+from mod.model import Seq2SeqTransformer
+from helper.utils import tokenize_smiles
+from helper.utils import decode_indices, valid_smiles_or_empty
+from rdkit import Chem, RDLogger
+import pandas as pd
+
 
 warnings.filterwarnings(
     "ignore",
@@ -12,26 +22,22 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 
-import pandas as pd
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-MODEL_PATH = ROOT / "pt" / "reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / "token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
-
-from mod.model import Seq2SeqTransformer
-from helper.utils import tokenize_smiles
-from rdkit import Chem, RDLogger
-from rdkit.Chem import Draw
 
 # Silence noisy invalid-SMILES parse warnings while the model is still being tuned.
 RDLogger.DisableLog("rdApp.error")
 RDLogger.DisableLog("rdApp.warning")
 
+    
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+
+MODEL_PATH = ROOT / "pt" / "reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
+
+
 
 # === Load vocab and model ===
 try:
@@ -78,44 +84,6 @@ except FileNotFoundError:
     exit()
 
 
-def _decode_indices(indices):
-    result = []
-    for idx in indices:
-        if idx == sos_idx:
-            continue
-        if idx == eos_idx:
-            break
-        if idx == pad_idx:
-            continue
-        token = idx2token.get(int(idx))
-        if token is not None:
-            result.append(token)
-    return result
-
-
-def _valid_smiles_or_empty(smiles):
-    if not isinstance(smiles, str):
-        return ""
-    cleaned = smiles.strip().replace("<pad>", "")
-    if not cleaned:
-        return ""
-    try:
-        mol = Chem.MolFromSmiles(cleaned)
-        if mol is None:
-            return ""
-        return Chem.MolToSmiles(mol, canonical=True)
-    except Exception:
-        return ""
-
-
-def _syntax_score(smiles):
-    if not smiles:
-        return -1e9
-    score = 0.0
-    score -= abs(smiles.count("(") - smiles.count(")")) * 10.0
-    score -= max(0, smiles.count(")") - smiles.count("(")) * 25.0
-    score -= max(0, len(smiles) - 120) * 5.0
-    return score
 
 
 def predict_product(reactant_smiles, max_len=120, target_smiles=None):
@@ -131,7 +99,6 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
 
     src_tensor = torch.tensor(src_ids, dtype=torch.long, device=device).unsqueeze(0)
 
-    #best_result = {"smiles": "", "score": -1e9, "tokens": []}
 
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
@@ -139,26 +106,20 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
         )
 
     for rank, (seq, score) in enumerate(beam_candidates[:5], 1):
-        tokens = _decode_indices(seq.tolist())
+        tokens = decode_indices(seq.tolist(), idx2token, sos_idx, eos_idx, pad_idx)
         smiles = "".join(tokens)
         
         if target_smiles is not None:
-            target_canon = _valid_smiles_or_empty(target_smiles)
-            pred_canon = _valid_smiles_or_empty(smiles)
+            target_canon = valid_smiles_or_empty(target_smiles)
+            pred_canon = valid_smiles_or_empty(smiles)
             if target_canon and pred_canon:
                 is_correct = target_canon == pred_canon
-                print(f"{rank}. Score: {score:.4f} | Correct: {is_correct}")
+                print(f"{rank}. Score: {score:.4f} | Correct: {is_correct} | SMILES: {smiles}")
             else:
                 print(f"{rank}. Score: {score:.4f} | Correct: N/A (invalid SMILES)")
         else:
-            
-            valid_smiles = _valid_smiles_or_empty(smiles)
-            
-            # print(f"{rank}. Score: {score:.4f}")
-            # print(f"   SMILES: {smiles}")
-            
-            if valid_smiles:
-                return valid_smiles
+            print(f"{rank}. Score: {score:.4f} | SMILES: {smiles}")
+            return valid_smiles_or_empty(smiles)
 
     return ""
 
@@ -191,13 +152,17 @@ def predict_product_greedy(reactant_smiles, max_len=120):
             max_len=max_len
         )
 
-    tokens = _decode_indices(
-        generated.squeeze(0).tolist()
+    tokens = decode_indices(
+        generated.squeeze(0).tolist(),
+        idx2token,
+        sos_idx,
+        eos_idx,
+        pad_idx
     )
 
     smiles = "".join(tokens)
 
-    return _valid_smiles_or_empty(smiles)
+    return valid_smiles_or_empty(smiles)
 
 
 def _canonical_smiles(smiles):
@@ -256,14 +221,15 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 
 # === Example ===
 if __name__ == "__main__":
+    print("Starting prediction accuracy test...")
+    start_time = time.time()
     #reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
     # reactant = "CCO"
-    reactant = "c1ccccc1.CC"
+    # reactant = "c1ccccc1.CC"
     # target = "CCC(O)c1ccc2c(c1)NC(=O)C(C)O2"
-    # reactant = "Brc1cncc(Br)c1.C[O-]"
+    reactant = "Brc1cncc(Br)c1.C[O-]"
     predicted = predict_product(reactant)
     print(f"Reactant:  {reactant}")
     print(f"Predicted: {predicted}")
-
-    # metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
-    # print(metrics)
+    end_time = time.time()
+    print(f"Test completed in {end_time - start_time:.2f} seconds.")

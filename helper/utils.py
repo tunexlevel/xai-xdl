@@ -83,3 +83,34 @@ def build_vocab(smiles_list):
             idx2token[idx] = tok
 
     return token2idx, idx2token
+
+
+def decode_indices(indices, idx2token, sos_idx=1, eos_idx=2, pad_idx=0):
+    result = []
+    for idx in indices:
+        if idx == sos_idx:
+            continue
+        if idx == eos_idx:
+            break
+        if idx == pad_idx:
+            continue
+        token = idx2token.get(int(idx))
+        if token is not None:
+            result.append(token)
+    return result
+
+
+def valid_smiles_or_empty(smiles):
+    if not isinstance(smiles, str):
+        return ""
+    cleaned = smiles.strip().replace("<pad>", "")
+    if not cleaned:
+        return ""
+    try:
+        mol = Chem.MolFromSmiles(cleaned)
+        if mol is None:
+            return ""
+        return Chem.MolToSmiles(mol, canonical=True)
+    except Exception:
+        return ""
+
