@@ -26,9 +26,9 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 1e-3
 PAD_TOKEN = "<pad>"
-# FILE_PATH = ROOT / "data" / "uspto50k" / "processed_deduplicated.csv"
-# FILE_PATH = ROOT / "data" / "uspto50k" / "processed_uspto.csv"
-FILE_PATH = ROOT / "data" / "uspto50k" / "processed_ocr_shuffled.csv"
+#FILE_PATH = ROOT / "data" / "uspto50k" / "processed_deduplicated.csv"
+FILE_PATH = ROOT / "data" / "uspto50k" / "processed_uspto_deduplicated.csv"
+# FILE_PATH = ROOT / "data" / "uspto50k" / "processed_ocr_shuffled.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
@@ -48,6 +48,7 @@ with open(ROOT / "tokens" / "token2idx.json", "w") as f:
     json.dump(token2idx, f)
 with open(ROOT / "tokens" / "idx2token.json", "w") as f:
     json.dump(idx2token, f)
+    
 
 # Dataset & DataLoader
 dataset = ReactionDataset(df, token2idx, max_len=MAX_LEN)

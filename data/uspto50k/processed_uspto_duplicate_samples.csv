@@ -1,0 +1,11 @@
+reactants,products
+COC(=O)C1(C)CCN(C(=O)OC(C)(C)C)CC1,COC(=O)C1(C)CCNCC1
+Cc1cccc(C2CC2)c1O.Oc1cc(Cl)nnc1Cl,Cc1cccc(C2CC2)c1Oc1nnc(Cl)cc1O
+CC(C)(O)CCN(Cc1ccccc1)Cc1ccccc1.CI,COC(C)(C)CCN(Cc1ccccc1)Cc1ccccc1
+CC[C@@H](N)CC(=O)O.FC(F)(F)c1ccc(Br)cc1,CC[C@H](CC(=O)O)Nc1ccc(C(F)(F)F)cc1
+CNCCN(C)C.COC(=O)[C@H]1CC[C@H](C(=O)O)CC1,COC(=O)[C@@H]1CC[C@@H](C(=O)N(C)CCN(C)C)CC1
+COC[C@@H](NC(N)=O)c1ccccc1.Cn1cc(-c2nn(C(c3ccccc3)(c3ccccc3)c3ccccc3)c3cc(Cl)ncc23)cn1,COC[C@@H](NC(=O)Nc1cc2c(cn1)c(-c1cnn(C)c1)nn2C(c1ccccc1)(c1ccccc1)c1ccccc1)c1ccccc1
+O=C(OCc1ccccc1)N1CC[C@@H](c2ccccc2)C[C@H]1C1CCCC(F)(F)C1,FC1(F)CCCC([C@@H]2C[C@H](c3ccccc3)CCN2)C1
+CNC(=O)CCC(=O)c1c(OC)cccc1OC,CNC(=O)CCC(=O)c1c(O)cccc1OC
+Cc1ccc(B(O)O)cc1.N#Cc1ccccc1Cl,Cc1ccc(-c2ccccc2C#N)cc1
+COC(=O)C(C)Oc1cccc(C=O)c1,COC(=O)C(C)Oc1cccc(CO)c1

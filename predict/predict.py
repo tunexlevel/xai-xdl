@@ -216,7 +216,7 @@ if __name__ == "__main__":
     start_time = time.time()
     #metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
     reactants = "Oc1ccccc1.CI"
-    predicted_product = predict_product(reactants)
+    predicted_product = predict_product_greedy(reactants)
     print(f"Reactants: {reactants}")
     print(f"Predicted Product: {predicted_product}")
     end_time = time.time()

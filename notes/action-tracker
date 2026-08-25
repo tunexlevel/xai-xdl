@@ -51,3 +51,5 @@ Can we synthesis this any of this 3 basic onces
     predicted = predict_product(reactant)
     print(f"Reactant:  {reactant}")
     print(f"Predicted: {predicted}")
+
+https://hunterheidenreich.com/notes/chemistry/molecular-design/reaction-prediction/tied-two-way-transformers-retrosynthesis/
