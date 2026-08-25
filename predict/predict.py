@@ -100,7 +100,7 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
 
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
-            src_tensor, sos_idx, eos_idx, beam_width=5, max_len=max_len
+            src_tensor, sos_idx, eos_idx, beam_width=10, max_len=max_len
         )
 
     for seq, score in beam_candidates:
@@ -214,7 +214,10 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
-    print(metrics)
+    #metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
+    reactants = "Oc1ccccc1.CI"
+    predicted_product = predict_product(reactants)
+    print(f"Reactants: {reactants}")
+    print(f"Predicted Product: {predicted_product}")
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")

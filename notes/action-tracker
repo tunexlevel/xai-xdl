@@ -14,6 +14,13 @@ The last remaining issue is in generation quality, not in setup. The model is le
 Duplicates removed: 6295
 Remaining reactions: 133700
 
+Is the name of an algorithm
+My model predicts well now but not doing well with undergraduate orgainic chgem
+
+I need simple organic chemistry data --- That is what I am working omn
+
+But let me ask:
+Can we synthesis this any of this 3 basic onces
 
 | #  | Reaction                     | Reaction SMILES                      | My Model Prediction
 | -- | ---------------------------- | ------------------------------------ |------------------------------------ 
@@ -26,6 +33,21 @@ Remaining reactions: 133700
 | 7  | Ethanol → ethene             | `CCO>>C=C`                           | CCOCC
 | 8  | Acetaldehyde → ethanol       | `CC=O>>CCO`                          | CC=O
 | 9  | Acetone → isopropanol        | `CC(=O)C>>CC(O)C`                    | CC(=O)C(C)O
-| 10 | Benzene → chlorobenzene      | `c1ccccc1.Cl>>Clc1ccccc1`            | Clc1ccccc1
+| 10 | Benzene + Cholrine → chlorobenzene      | `c1ccccc1.Cl>>Clc1ccccc1`            | Clc1ccccc1
 | 11 | Benzene → toluene            | `c1ccccc1.CC>>Cc1ccccc1`             | CCCc1ccccc1
 | 12 | Aniline → acetanilide        | `Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1` | CC(=O)Nc1ccccc1
+
+
+[
+    'C.Cl>>CCl','C=C.O>>CCO','C=C>>CC','CCO>>CC=O','CC(=O)O.COC>>CC(=O)OC',
+    'CC(=O)O.CCO>>CC(=O)OCC','CCO>>C=C','CC=O>>CCO','CC(=O)C>>CC(O)C','c1ccccc1.Cl>>Clc1ccccc1','Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1',
+]
+
+#reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
+    reactant = "CCO"
+    # reactant = "c1ccccc1.CC"
+    # target = "CCC(O)c1ccc2c(c1)NC(=O)C(C)O2"
+    # reactant = "Brc1cncc(Br)c1.C[O-]"
+    predicted = predict_product(reactant)
+    print(f"Reactant:  {reactant}")
+    print(f"Predicted: {predicted}")

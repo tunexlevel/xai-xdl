@@ -84,7 +84,51 @@ except FileNotFoundError:
     exit()
 
 
+def get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx,
+                        target_smiles=None):
 
+    best_valid_prediction = ""
+
+    target_canon = ""
+    if target_smiles is not None:
+        target_canon = valid_smiles_or_empty(target_smiles)
+
+    for rank, (seq, score) in enumerate(beam_candidates[:5], 1):
+
+        # Decode token indices
+        tokens = decode_indices(
+            seq.tolist(),
+            idx2token,
+            sos_idx,
+            eos_idx,
+            pad_idx
+        )
+
+        smiles = "".join(tokens)
+
+        # Validate and canonicalize prediction
+        pred_canon = valid_smiles_or_empty(smiles)
+
+        # Skip invalid SMILES
+        if not pred_canon:
+            continue
+
+        # Keep the highest-scoring valid prediction
+        if not best_valid_prediction:
+            best_valid_prediction = pred_canon
+
+        # If target is available, check for exact canonical match
+        if target_canon:
+            if pred_canon == target_canon:
+                return pred_canon
+
+        # print(
+        #     f"{rank}. Score: {score:.4f} | "
+        #     f"SMILES: {pred_canon}"
+        # )
+
+    # No exact match found, return best valid prediction
+    return best_valid_prediction
 
 def predict_product(reactant_smiles, max_len=120, target_smiles=None):
     model.eval()
@@ -105,24 +149,8 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
             src_tensor, sos_idx, eos_idx, beam_width=5, max_len=max_len
         )
 
-    for rank, (seq, score) in enumerate(beam_candidates[:5], 1):
-        tokens = decode_indices(seq.tolist(), idx2token, sos_idx, eos_idx, pad_idx)
-        smiles = "".join(tokens)
-        
-        if target_smiles is not None:
-            target_canon = valid_smiles_or_empty(target_smiles)
-            pred_canon = valid_smiles_or_empty(smiles)
-            if target_canon and pred_canon:
-                is_correct = target_canon == pred_canon
-                print(f"{rank}. Score: {score:.4f} | Correct: {is_correct} | SMILES: {smiles}")
-            else:
-                print(f"{rank}. Score: {score:.4f} | Correct: N/A (invalid SMILES)")
-        else:
-            print(f"{rank}. Score: {score:.4f} | SMILES: {smiles}")
-            return valid_smiles_or_empty(smiles)
-
-    return ""
-
+    return get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx, target_smiles)
+            
 
 def predict_product_greedy(reactant_smiles, max_len=120):
 
@@ -222,14 +250,20 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 # === Example ===
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
+    data = [    #'C1COCCN1.FC(F)(F)c1ccc(Br)cc1>>FC(F)(F)c1ccc(N2CCOCC2)cc1',
+            'ClCc1cccc(CCl)n1.Sc1ccccc1>>c3ccc(SCc2cccc(CSc1ccccc1)n2)cc3',
+                # 'C.Cl>>CCl','C=C.O>>CCO','C=C>>CC','CCO>>CC=O','CC(=O)O.COC>>CC(=O)OC',
+                # 'CC(=O)O.CCO>>CC(=O)OCC','CCO>>C=C','CC=O>>CCO','CC(=O)C>>CC(O)C','c1ccccc1.Cl>>Clc1ccccc1','Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1',
+            ]
     start_time = time.time()
-    #reactant = "Brc1ccc(Br)nc1.CN(C)C=O"
-    reactant = "CCO"
-    # reactant = "c1ccccc1.CC"
-    # target = "CCC(O)c1ccc2c(c1)NC(=O)C(C)O2"
-    # reactant = "Brc1cncc(Br)c1.C[O-]"
-    predicted = predict_product(reactant)
-    print(f"Reactant:  {reactant}")
-    print(f"Predicted: {predicted}")
+    
+    # Run the accuracy test on the provided data
+    for reaction in data:
+        reactants, products = reaction.split(">>")
+        predicted_product = predict_product_greedy(reactants)
+        beam_prediction = predict_product(reactants, target_smiles=products)
+        correct = predicted_product == products
+        print(f"Reactants: {reactants} | Correct: {correct} | Predicted Product: {predicted_product} | Beam Product: {beam_prediction} | Target Product: {products}")  
+    
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")
