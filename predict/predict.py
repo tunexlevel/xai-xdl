@@ -190,7 +190,7 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
         if not reactant or not target:
             continue
 
-        pred = predict_product_greedy(reactant)
+        pred = predict_product(reactant)
         pred_canon = _canonical_smiles(pred)
         target_canon = _canonical_smiles(target)
 
@@ -214,10 +214,11 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    #metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
-    reactants = "Oc1ccccc1.CI"
-    predicted_product = predict_product_greedy(reactants)
-    print(f"Reactants: {reactants}")
-    print(f"Predicted Product: {predicted_product}")
+    metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
+    print(f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f}%")
+    # reactants = "c1ccccc1.Cl"
+    # predicted_product = predict_product(reactants)
+    # print(f"Reactants: {reactants}")
+    # print(f"Predicted Product: {predicted_product}")
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")

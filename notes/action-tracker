@@ -53,3 +53,17 @@ Can we synthesis this any of this 3 basic onces
     print(f"Predicted: {predicted}")
 
 https://hunterheidenreich.com/notes/chemistry/molecular-design/reaction-prediction/tied-two-way-transformers-retrosynthesis/
+
+The product of the probabilities of allpredicted tokens can be used as a confidence score. (Molecular Transformer: A Model for Uncertainty-CalibratedChemical Reaction Predictio)
+
+Where we are now
+
+I would not proceed to the Transformer yet.
+
+We have identified three preprocessing improvements:
+
+Separate agents from reagents.
+Replace binary RDKit validity with parseable/sanitizable/usable categories.
+Add molecular complexity descriptors for controlled evaluation.
+
+Then we'll perform the source-aware train/validation/test split.

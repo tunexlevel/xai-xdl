@@ -251,7 +251,7 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     data = [    #'C1COCCN1.FC(F)(F)c1ccc(Br)cc1>>FC(F)(F)c1ccc(N2CCOCC2)cc1',
-            # 'ClCc1cccc(CCl)n1.Sc1ccccc1>>c3ccc(SCc2cccc(CSc1ccccc1)n2)cc3',
+            'ClCc1cccc(CCl)n1.Sc1ccccc1>>c3ccc(SCc2cccc(CSc1ccccc1)n2)cc3',
                 'C.Cl>>CCl','C=C.O>>CCO','C=C>>CC','CCO>>CC=O','CC(=O)O.COC>>CC(=O)OC',
                 'CC(=O)O.CCO>>CC(=O)OCC','CCO>>C=C','CC=O>>CCO','CC(=O)C>>CC(O)C','c1ccccc1.Cl>>Clc1ccccc1','Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1',
             ]
