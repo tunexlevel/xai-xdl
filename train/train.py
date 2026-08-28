@@ -26,14 +26,15 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 1e-3
 PAD_TOKEN = "<pad>"
-FILE_PATH = ROOT / "data" /  "uspto50k_mapped.csv"
+FILE_NAME = "uspto50k_mapped" 
+FILE_PATH = ROOT / "data" /  f"{FILE_NAME}.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-start_message = "Training Data @ "+str(FILE_PATH)
+start_message = "Training Data @ "+str(FILE_NAME)+", Batch Size: "+str(BATCH_SIZE)+", Epochs: "+str(EPOCHS)+", Max Len: "+str(MAX_LEN)+", Emb Dim: "+str(EMB_DIM)+", Hidden Dim: "+str(HIDDEN_DIM)+", Learning Rate: "+str(LEARNING_RATE)
 
 print('' + '=' * len(start_message))
 print(start_message)
@@ -48,9 +49,9 @@ token2idx, idx2token = build_vocab(all_smiles)
 pad_idx = token2idx[PAD_TOKEN]
 
 # Save vocabulary
-with open(ROOT / "tokens" / "token2idx.json", "w") as f:
+with open(ROOT / "tokens" / f"{FILE_NAME}_token2idx.json", "w") as f:
     json.dump(token2idx, f)
-with open(ROOT / "tokens" / "idx2token.json", "w") as f:
+with open(ROOT / "tokens" / f"{FILE_NAME}_idx2token.json", "w") as f:
     json.dump(idx2token, f)
     
 
@@ -153,7 +154,7 @@ for epoch in range(EPOCHS):
         print("Perfect accuracy achieved, stopping training.")
         break
 # Save model
-torch.save(model.state_dict(), ROOT / "pt" / "reaction_model.pt")
+torch.save(model.state_dict(), ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt")
 
 end_time = time.time()
 print(f"Training completed in {end_time - start_time:.2f} seconds.")

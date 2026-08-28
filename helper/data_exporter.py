@@ -208,13 +208,13 @@ def main(run_type="all"):
     if run_type in ["all", "uspto_test_mapped"]:
             # USPTO50k Mapped processing
             source_file = "data/raw/uspto50k/raw_test.csv"
-            target_file = "data/uspto50k_test_mapped.csv"
+            target_file = "data/uspto50k_mapped_test.csv"
             process_uspto_file(source_file, target_file, type="uspto", remove_mapping=False)
     
     if run_type in ["all", "uspto_test_unmapped"]:
         # USPTO50k Unmapped processing
         source_file = "data/raw/uspto50k/raw_test.csv"
-        target_file = "data/uspto50k_test_unmapped.csv"
+        target_file = "data/uspto50k_unmapped_test.csv"
         process_uspto_file(source_file, target_file, type="uspto", remove_mapping=True)
     
     if run_type in ["all", "chemxai"]:

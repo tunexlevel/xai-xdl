@@ -29,10 +29,10 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-MODEL_PATH = ROOT / "pt" / "reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / "token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
+FILE_NAME = "uspto50k_mapped"
+MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
 
 
 # === Load vocab and model ===
@@ -220,7 +220,7 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    input_file = "data/uspto50k_test_mapped.csv"
+    input_file = f"data/{FILE_NAME}_test.csv"
     print("" + "=" * len(input_file))
     print(input_file)
     print("" + "=" * len(input_file))
