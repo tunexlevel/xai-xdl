@@ -150,6 +150,8 @@ def _canonical_smiles(smiles):
         return s
 
 
+
+
 def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     df = pd.read_csv(csv_path)
     if "reactants" not in df.columns or "products" not in df.columns:
@@ -161,49 +163,47 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
         df = df.head(limit)
 
     valid_smiles_count = 0
-
-
     invalid_smiles_count = 0
     checked = 0
     correct = 0
 
     for _, row in df.iterrows():
-
         reactant = str(row["reactants"]).strip()
         target = str(row["products"]).strip()
 
-        if not reactant or not target:
+        if not reactant or not target or reactant.lower() == "nan" or target.lower() == "nan":
             invalid_smiles_count += 1
             continue
 
         target_canon = _canonical_smiles(target)
+        reactant_canon = _canonical_smiles(reactant)
 
-        # Invalid target = bad dataset entry
-        if target_canon is None:
+        # Invalid target or reactant in dataset
+        if target_canon is None or reactant_canon is None:
             invalid_smiles_count += 1
             continue
 
-            valid_smiles_count += 1
+        valid_smiles_count += 1
 
-            pred = predict_product(reactant)
-            pred_canon = _canonical_smiles(pred)
+        # Run prediction
+        pred = predict_product(reactant)
+        pred_canon = _canonical_smiles(pred) if pred else None
 
-            checked += 1
+        checked += 1
 
-            # Invalid prediction = incorrect prediction
-            if pred_canon is not None and pred_canon == target_canon:
-                correct += 1
+        # Canonical match comparison
+        if pred_canon is not None and pred_canon == target_canon:
+            correct += 1
 
-            if checked % 200 == 0:
-                accuracy = correct / checked if checked else 0.0
-
-                print(
-                    f"Checked: {checked}, "
-                    f"Correct: {correct}, "
-                    f"Accuracy: {accuracy:.4f}, "
-                    f"Valid_Smiles: {valid_smiles_count}, "
-                    f"Invalid_Smiles: {invalid_smiles_count}"
-                )
+        if checked % 200 == 0:
+            accuracy = correct / checked if checked else 0.0
+            print(
+                f"Checked: {checked}, "
+                f"Correct: {correct}, "
+                f"Accuracy: {accuracy:.4f}, "
+                f"Valid_Smiles: {valid_smiles_count}, "
+                f"Invalid_Smiles: {invalid_smiles_count}"
+            )
 
     accuracy_pct = (correct / checked * 100.0) if checked else 0.0
 
@@ -214,7 +214,6 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
         "valid_smiles": valid_smiles_count,
         "invalid_smiles": invalid_smiles_count,
     }
-
 
 # === Example ===
 if __name__ == "__main__":

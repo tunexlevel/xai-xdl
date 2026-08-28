@@ -24,6 +24,32 @@ TOKEN_REGEX = r"""
 token_pattern = re.compile(TOKEN_REGEX, re.X)
 
 
+def map_smiles(smiles):
+    """
+    Convert an unmapped SMILES into an atom-mapped SMILES.
+
+    Example:
+        CCO -> [CH3:1][CH2:2][OH:3]
+    """
+    if not smiles or not isinstance(smiles, str):
+        return None
+
+    smiles = smiles.strip()
+
+    mol = Chem.MolFromSmiles(smiles)
+
+    if mol is None:
+        return None
+
+    # Assign sequential atom-map numbers
+    for atom_idx, atom in enumerate(mol.GetAtoms(), start=1):
+        atom.SetAtomMapNum(atom_idx)
+
+    return Chem.MolToSmiles(
+        mol,
+        canonical=True
+    )
+    
 def tokenize_smiles(smiles: str):
     if not smiles or not isinstance(smiles, str):
         return []

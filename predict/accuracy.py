@@ -46,11 +46,13 @@ device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
-MODEL_PATH = ROOT / "pt" / "reaction_model.pt"
+FILE_NAME = "uspto50k_mapped"
 
-TOKEN2IDX_PATH = ROOT / "tokens" / "token2idx.json"
+MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
 
-IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
+TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
+
+IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
 
 
 # ============================================================
@@ -776,7 +778,7 @@ if __name__ == "__main__":
 
     metrics = test_prediction_accuracy(
 
-        csv_path="data/test.csv"
+        csv_path=f"data/{FILE_NAME}_test.csv"
 
     )
 
