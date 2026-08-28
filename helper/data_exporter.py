@@ -1,3 +1,5 @@
+import time
+
 import pandas as pd
 from rdkit import Chem
 
@@ -56,16 +58,22 @@ def clean_smiles(smiles):
     # Remove quotes and all whitespace
     return smiles.replace('"', '').replace("'", '').replace(' ', '').strip()
 
-def process_uspto_file(input_path, output_path, max_samples=None, type=None):
+def process_uspto_file(input_path, output_path, max_samples=None, type=None, remove_mapping=True):
     df = load_uspto_file(input_path, max_samples, type)
     if df is None:
         print("No data to process.")
         return
     
-    # Remove atom mapping from reactants and products
-    df['reactants'] = df['reactants'].apply(clean_smiles).apply(remove_atom_mapping)
-    df['products'] = df['products'].apply(clean_smiles).apply(remove_atom_mapping)
+    if remove_mapping:
+        # Remove atom mapping from reactants and products
+        df['reactants'] = df['reactants'].apply(clean_smiles).apply(remove_atom_mapping)
+        df['products'] = df['products'].apply(clean_smiles).apply(remove_atom_mapping)
 
+    else:
+        # Clean SMILES without removing atom mapping
+        df['reactants'] = df['reactants'].apply(clean_smiles)
+        df['products'] = df['products'].apply(clean_smiles)
+    
     # Drop rows with None values after mapping removal
     df = df.dropna(subset=['reactants', 'products'])
 
@@ -76,6 +84,31 @@ def process_uspto_file(input_path, output_path, max_samples=None, type=None):
     except Exception as e:
         print(f"Error saving processed data to {output_path}: {e}")
 
+def process_ocr_file(input_path, output_path, max_samples=None, type=None, remove_mapping=True):
+    df = load_uspto_file(input_path, max_samples, type)
+    if df is None:
+        print("No data to process.")
+        return
+    
+    if remove_mapping:
+        # Remove atom mapping from reactants and products
+        df['reactants'] = df['reactants'].apply(clean_smiles).apply(remove_atom_mapping)
+        df['products'] = df['products'].apply(clean_smiles).apply(remove_atom_mapping)
+
+    else:
+        # Clean SMILES without removing atom mapping
+        df['reactants'] = df['reactants'].apply(clean_smiles)
+        df['products'] = df['products'].apply(clean_smiles)
+    
+    # Drop rows with None values after mapping removal
+    df = df.dropna(subset=['reactants', 'products'])
+
+    # Save the processed DataFrame to a new CSV file
+    try:
+        df.to_csv(output_path, index=False)
+        print(f"Processed data saved to {output_path}")
+    except Exception as e:
+        print(f"Error saving processed data to {output_path}: {e}")
 
 def load_chemxai_file(path, split=None, max_samples=None):
     """
@@ -133,7 +166,6 @@ def load_chemxai_file(path, split=None, max_samples=None):
 
     return df
 
-
 def process_chemxai_file(input_path, output_path, max_samples=None, type=None):
     df = load_chemxai_file(input_path)
     if df is None:
@@ -153,23 +185,58 @@ def process_chemxai_file(input_path, output_path, max_samples=None, type=None):
         print(f"Processed data saved to {output_path}")
     except Exception as e:
         print(f"Error saving processed data to {output_path}: {e}")
-        
-        
-        
-source_file = "data/raw/output/train.csv"
-# target_file = "data/uspto50k/processed_ocr.csv"
+     
+def main(run_type="all"):
+    starting_message = f"Starting data processing for run_type: {run_type}"
+    
+    print(starting_message)
+    
+    start_time = time.time()
+    
+    if run_type in ["all", "uspto_mapped"]:
+        # USPTO50k Mapped processing
+        source_file = "data/raw/uspto50k/raw_train.csv"
+        target_file = "data/uspto50k_mapped.csv"
+        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=False)
 
+    if run_type in ["all", "uspto_unmapped"]:
+        # USPTO50k Unmapped processing
+        source_file = "data/raw/uspto50k/raw_train.csv"
+        target_file = "data/uspto50k_unmapped.csv"
+        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=True)
+    
+    if run_type in ["all", "uspto_test_mapped"]:
+            # USPTO50k Mapped processing
+            source_file = "data/raw/uspto50k/raw_test.csv"
+            target_file = "data/uspto50k_test_mapped.csv"
+            process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=False)
+    
+    if run_type in ["all", "uspto_test_unmapped"]:
+        # USPTO50k Unmapped processing
+        source_file = "data/raw/uspto50k/raw_test.csv"
+        target_file = "data/uspto50k_test_unmapped.csv"
+        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=True)
+    
+    if run_type in ["all", "chemxai"]:
+        # ChemXAI processing
+        source_file = "data/raw/chemxai/cleaned_chemxai.csv"
+        target_file = "data/chemxai/processed_train.csv"
+        process_chemxai_file(source_file, target_file, max_samples=10000, type="chemxai")
 
-process_chemxai_file(source_file, "data/uspto50k/processed_train.csv")
+    if run_type in ["all", "ocr"]:
+        # OCR processing
+        source_file = "data/raw/ocr/ocr_train.csv"
+        target_file = "data/ocr/processed_train.csv"
+        process_ocr_file(source_file, target_file, max_samples=10000, type="ocr", remove_mapping=True)
+    
+    end_time = time.time()
+    
+    elapsed_time = end_time - start_time
+    
+    print(f"Data processing completed for run_type: {run_type} in {elapsed_time:.2f} seconds.")
 
-# val_df = load_chemxai_file(
-#     source_file,
-#     split="validation"
-# )
-
-# test_df = load_chemxai_file(
-#     source_file,
-#     split="test"
-# )
-
-# process_uspto_file(source_file, target_file, max_samples=100000, type="ocr")
+if __name__ == "__main__":
+    # Change run_type as needed: 
+    # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
+    # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
+    main(run_type="uspto_test_mapped")

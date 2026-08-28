@@ -67,3 +67,35 @@ Replace binary RDKit validity with parseable/sanitizable/usable categories.
 Add molecular complexity descriptors for controlled evaluation.
 
 Then we'll perform the source-aware train/validation/test split.
+
+
+reaction_model_mit_rp.pt => USPTO_MIT and USPTO_Condition Moded
+
+
+Experiment_1 Todo
+====================
+1. Perform atom-mapping experiment on USPTO50k Data
+2. Change dataset.py to fit to perform atom-mapping experiment
+3. Keep track of the tokens, model and results
+4. Perform no-atom-mapping experiment on USPTO50k Data
+5. Create dataset.py to fit to perform no-atom-mapping experiment
+6. Keep track of the tokens, model and results
+7. Compare results to validate if atom-mapping improved result or not
+8. Play with the hyperparameters
+9. Repeat atom-mapping and no-mapping to see if result improved based on hyperparameters
+10. Base on the result above, perform training on OCR Dataset only
+12. Keep track of the tokens, model and results
+13. Base on the result above, perform training on MIT Dataset only
+14. Keep track of the tokens, model and results
+15. Record your findings and move to Experiment 2
+
+
+Root-aligned SMILES: A Tight Representation for Chemical Reaction Prediction
+
+
+I have some questions to ask on Expriment 1 (reactant->product) before I proceed to Experiment 2 (reactant+reagent->product).:
+
+1. I have used USPTO50k, OCR, and MIT datasets but the Top 1 accuracy is below 55% which is very low.  Can you suggest any changes in hyperparameters or model architecture to improve the accuracy?
+2. I have used a Transformer model with 3 encoder layers and 8 attention heads. Do you think increasing the number of encoder layers or attention heads would help improve the accuracy?
+3. My Model learns the sequencial token produce is it same as learning chemistry transformation and is there a way it can actually learn that for Experiment 1 or it can only be possible with Experiment 2.
+4. If I implent Experiment 2, can my system improves better in terms of predicting chemistry and the Top 1 accuracy will increase?

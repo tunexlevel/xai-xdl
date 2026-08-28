@@ -158,19 +158,6 @@ class Seq2SeqTransformer(nn.Module):
         )
         return ys, combined_attn
 
-    def beam_search(self, src, sos_idx, eos_idx, beam_width=4, max_len=120):
-        candidates = self.beam_search_candidates(
-            src, sos_idx, eos_idx, beam_width=beam_width, max_len=max_len
-        )
-        if not candidates:
-            return torch.tensor([], dtype=torch.long, device=src.device)
-        best_seq = max(candidates, key=lambda x: x[1])[0]
-        if best_seq[-1].item() != eos_idx:
-            best_seq = torch.cat(
-                [best_seq, torch.tensor([eos_idx], device=src.device)], dim=0
-            )
-        return best_seq.unsqueeze(0)
-
     def beam_search_candidates(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
         device = src.device
         src_padding_mask = src == self.pad_idx
@@ -271,6 +258,13 @@ class Seq2SeqTransformer(nn.Module):
                 break
 
         return ys
+
+        # ============================================================
+    
+
+
+
+
 
 # Helper class for Transformer
 class PositionalEncoding(nn.Module):

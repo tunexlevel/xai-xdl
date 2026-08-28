@@ -227,7 +227,7 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
         if not reactant or not target:
             continue
 
-        pred = predict_product_greedy(reactant)
+        pred = predict_product(reactant)
         pred_canon = _canonical_smiles(pred)
         target_canon = _canonical_smiles(target)
 
@@ -255,14 +255,44 @@ if __name__ == "__main__":
                 'C.Cl>>CCl','C=C.O>>CCO','C=C>>CC','CCO>>CC=O','CC(=O)O.COC>>CC(=O)OC',
                 'CC(=O)O.CCO>>CC(=O)OCC','CCO>>C=C','CC=O>>CCO','CC(=O)C>>CC(O)C','c1ccccc1.Cl>>Clc1ccccc1','Nc1ccccc1.CC(=O)O>>CC(=O)Nc1ccccc1',
             ]
+    data1 = [
+        'CC(C)(C)OC(=O)c1ccc(NCC2(O)CCN(CCc3ccc(C#N)cc3)CC2)cc1.O=C([O-])O>>CN(CC1(O)CCN(CCc2ccc(C#N)cc2)CC1)c1ccc(C(=O)OC(C)(C)C)cc1',
+        'CC(=O)c1ccc(Cl)c(Nc2ccccc2)c1.CS(=O)(=O)Cl>>CC(=O)c1ccc(Cl)c(NS(C)(=O)=O)c1',
+        'O=C1CCC(=O)N1Br.c1ccc(CCCOc2ccccc2)cc1>>BrC(CCOc1ccccc1)c1ccccc1',
+        'CC(=O)Nc1ccc(C=O)cc1>>CC(=O)Nc1ccc(CO)cc1',
+        'CC(C)CC1CNCCN1.O=S(=O)(Cl)c1cc2ccc(Cl)cc2s1>>CC(C)CC1CN(S(=O)(=O)c2cc3ccc(Cl)cc3s2)CCN1',
+        'CC(=O)Cl.CCNCc1cc(C(F)(F)F)ccc1-c1cc(C(F)(F)C(=O)O)ccc1OC>>CCN(Cc1cc(C(F)(F)F)ccc1-c1cc(C(F)(F)C(=O)O)ccc1OC)C(C)=O',
+        'CCOC(=O)C(=O)c1csc(N)n1.O=C=Nc1ccc(Br)cc1>>CCOC(=O)C(=O)c1csc(NC(=O)Nc2ccc(Br)cc2)n1',
+        'COc1nccnc1I.NN>>COc1nccnc1NN',
+        'COc1cc(C=C(C#N)c2ccc(C(F)(F)F)nc2)ccc1O.O=[N+]([O-])O>>COc1cc(C=C(C#N)c2ccc(C(F)(F)F)nc2)cc([N+](=O)[O-])c1O',
+        'N#C[S-].O=C(CBr)c1ccc(C(F)(F)F)cc1>>N#CSCC(=O)c1ccc(C(F)(F)F)cc1',
+        'CC(=O)Nc1ccc(S(=O)(=O)C(F)(F)F)cc1.O=[N+]([O-])O>>CC(=O)Nc1ccc(S(=O)(=O)C(F)(F)F)cc1[N+](=O)[O-]',
+        'CC(C)(C)CNC(=O)NCCCl.O=N[O-]>>CC(C)(C)CNC(=O)N(CCCl)N=O'
+    ]
+    
+    data2 = [
+        'CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1C.O=C1CCC(=O)N1Br>>CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1CBr',
+        'CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.N#Cc1cc(-c2cccc([N+](=O)[O-])c2)c2nc(N)sc2c1>>CC(C)(C)OC(=O)Nc1nc2c(-c3cccc([N+](=O)[O-])c3)cc(C#N)cc2s1',
+        'NCc1ccccc1S(=O)(=O)C1CC1.O=C(OC(=O)C(F)(F)F)C(F)(F)F>>O=C(NCc1ccccc1S(=O)(=O)C1CC1)C(F)(F)F',
+        'C/C=C/C(=O)O[Si](C)(C)C.O=C1CCC(=O)N1Br>>C[Si](C)(C)OC(=O)/C=C/CBr',
+        'CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(Sc4ccccc4)cc3c2C1.O=C(OO)c1cccc(Cl)c1>>CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(S(=O)c4ccccc4)cc3c2C1',
+        'CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.O=Cc1c[nH]cn1>>CC(C)(C)OC(=O)n1cnc(C=O)c1',
+        'Cc1cnc(Cl)cc1Cl.O=C1CCC(=O)N1Br>>Clc1cc(Cl)c(CBr)cn1',
+        'COc1nc2ccc(C(O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1>>COc1nc2ccc(C(=O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1',
+        'Cc1cc(/C=C/C(F)(F)F)ccc1C(=O)Nc1ccc2sc(C(C)O)nc2c1>>CC(=O)c1nc2cc(NC(=O)c3ccc(/C=C/C(F)(F)F)cc3C)ccc2s1',
+        'CCOC(=O)C1CCC(=O)CC1.OCCO>>CCOC(=O)C1CCC2(CC1)OCCO2',
+        'CCCCc1ncc(C(C)O)n1Cc1ccccc1Cl>>CCCCc1ncc(C(C)=O)n1Cc1ccccc1Cl',
+        'CC1(c2cc3cccnc3[nH]2)CC1.O=C(OO)c1cccc(Cl)c1>>CC1(c2cc3ccc[n+]([O-])c3[nH]2)CC1',
+        'O=[N+]([O-])c1cc(CO)ccc1F>>O=Cc1ccc(F)c([N+](=O)[O-])c1' 
+    ]
     start_time = time.time()
     
     # Run the accuracy test on the provided data
-    for reaction in data:
+    for reaction in data2:
         reactants, products = reaction.split(">>")
         predicted_product = predict_product_greedy(reactants)
         beam_prediction = predict_product(reactants, target_smiles=products)
-        correct = predicted_product == products
+        correct = beam_prediction == products or predicted_product == products
         print(f"Reactants: {reactants} | Correct: {correct} | Predicted Product: {predicted_product} | Beam Product: {beam_prediction} | Target Product: {products}")  
     
     end_time = time.time()

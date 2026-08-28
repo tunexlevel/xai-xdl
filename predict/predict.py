@@ -216,9 +216,5 @@ if __name__ == "__main__":
     start_time = time.time()
     metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
     print(f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f}%")
-    # reactants = "c1ccccc1.Cl"
-    # predicted_product = predict_product(reactants)
-    # print(f"Reactants: {reactants}")
-    # print(f"Predicted Product: {predicted_product}")
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")

@@ -26,9 +26,7 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 1e-3
 PAD_TOKEN = "<pad>"
-#FILE_PATH = ROOT / "data" / "uspto50k" / "processed_deduplicated.csv"
-FILE_PATH = ROOT / "data" / "uspto50k" / "processed_train.csv"
-# FILE_PATH = ROOT / "data" / "uspto50k" / "processed_ocr_shuffled.csv"
+FILE_PATH = ROOT / "data" /  "uspto50k_unmapped.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
@@ -79,6 +77,8 @@ for epoch in range(EPOCHS):
     total_loss = 0
     total_correct = 0
     total_tokens = 0
+    total_reaction_correct = 0
+    total_reactions = 0
 
     pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{EPOCHS}")
     for src, tgt in pbar:
@@ -105,7 +105,43 @@ for epoch in range(EPOCHS):
 
     epoch_loss = total_loss / len(dataloader)
     accuracy = total_correct / total_tokens
-    print(f"\nEpoch {epoch+1} completed. Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.4f}\n")
+        
+    
+    # -----------------------------
+    # Reaction-level accuracy
+    # -----------------------------
+    preds_seq = preds.view(tgt[:, 1:].shape)
+    target_seq = target.view(tgt[:, 1:].shape)
+    
+    for i in range(tgt.size(0)):
+
+        # Ignore padding
+        valid_positions = target_seq[i] != pad_idx
+
+        pred_reaction = preds_seq[i][valid_positions]
+        target_reaction = target_seq[i][valid_positions]
+
+        # Entire sequence must be correct
+        if torch.equal(pred_reaction, target_reaction):
+            total_reaction_correct += 1
+
+        total_reactions += 1
+        
+        
+    
+    
+    preds_seq = preds.view(tgt[:, 1:].shape)
+    target_seq = target.view(tgt[:, 1:].shape)
+    
+    reaction_accuracy = (
+    total_reaction_correct / total_reactions
+    if total_reactions > 0
+        else 0.0
+    )
+
+
+    print(f"\nEpoch {epoch+1} completed. Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.4f}\n", 
+          f"Reaction-level Accuracy: {reaction_accuracy:.4f}")
 
     if accuracy == 1.0:
         print("Perfect accuracy achieved, stopping training.")

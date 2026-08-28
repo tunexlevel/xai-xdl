@@ -1,0 +1,10 @@
+reactants,products
+CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1C.O=C1CCC(=O)N1Br,CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1CBr
+CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.N#Cc1cc(-c2cccc([N+](=O)[O-])c2)c2nc(N)sc2c1,CC(C)(C)OC(=O)Nc1nc2c(-c3cccc([N+](=O)[O-])c3)cc(C#N)cc2s1
+NCc1ccccc1S(=O)(=O)C1CC1.O=C(OC(=O)C(F)(F)F)C(F)(F)F,O=C(NCc1ccccc1S(=O)(=O)C1CC1)C(F)(F)F
+C/C=C/C(=O)O[Si](C)(C)C.O=C1CCC(=O)N1Br,C[Si](C)(C)OC(=O)/C=C/CBr
+CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(Sc4ccccc4)cc3c2C1.O=C(OO)c1cccc(Cl)c1,CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(S(=O)c4ccccc4)cc3c2C1
+CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.O=Cc1c[nH]cn1,CC(C)(C)OC(=O)n1cnc(C=O)c1
+Cc1cnc(Cl)cc1Cl.O=C1CCC(=O)N1Br,Clc1cc(Cl)c(CBr)cn1
+COc1nc2ccc(C(O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1,COc1nc2ccc(C(=O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1
+Cc1cc(/C=C/C(F)(F)F)ccc1C(=O)Nc1ccc2sc(C(C)O)nc2c1,CC(=O)c1nc2cc(NC(=O)c3ccc(/C=C/C(F)(F)F)cc3C)ccc2s1
