@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 
+import time
+
 import pandas as pd
 
 
@@ -27,14 +29,10 @@ def remove_duplicate_reactions(df, sample_size=10):
     initial_count = len(df)
     duplicates_removed = initial_count - len(df_cleaned)
 
+
+    print(f"Initial reactions: {initial_count}")
     print(f"Duplicates removed: {duplicates_removed}")
     print(f"Remaining reactions: {len(df_cleaned)}")
-
-    if not removed_duplicates.empty:
-        print(f"\nSample of duplicate rows removed (first {len(removed_duplicates)}):")
-        print(removed_duplicates[required_cols].to_string(index=False, max_colwidth=60))
-    else:
-        print("\nNo duplicate rows removed.")
 
     return df_cleaned, removed_duplicates
 
@@ -69,10 +67,19 @@ def remove_duplicate_reactions_from_file(input_path, output_path=None, sample_ou
 
 
 if __name__ == "__main__":
+    
+    start_message = "Starting duplicate removal process..."
+    print('' + '=' * len(start_message))
+    print(start_message)
+    print('' + '=' * len(start_message))
+    
     parser = argparse.ArgumentParser(description="Remove duplicate reactions from a CSV file.")
-    parser.add_argument("input_path", nargs="?", default="data/uspto50k/processed_uspto.csv")
-    parser.add_argument("-o", "--output", dest="output_path", default="data/uspto50k/processed_uspto_deduplicated.csv")
-    parser.add_argument("--samples", dest="sample_output_path", default="data/uspto50k/processed_uspto_duplicate_samples.csv")
+    parser.add_argument("input_path", nargs="?", default="data/uspto50k_unmapped.csv")
+    parser.add_argument("-o", "--output", dest="output_path", default="data/uspto50k_unmapped_deduplicated.csv")
+    parser.add_argument("--samples", dest="sample_output_path", default="data/uspto50k_unmapped_duplicate_samples.csv")
     args = parser.parse_args()
 
+    start_time = time.time()
     remove_duplicate_reactions_from_file(args.input_path, args.output_path, args.sample_output_path)
+    elapsed_time = time.time() - start_time
+    print(f"Duplicate removal completed in {elapsed_time:.2f} seconds.")

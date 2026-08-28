@@ -26,12 +26,18 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 1e-3
 PAD_TOKEN = "<pad>"
-FILE_PATH = ROOT / "data" /  "uspto50k_unmapped.csv"
+FILE_PATH = ROOT / "data" /  "uspto50k_mapped.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+start_message = "Training Data @ "+str(FILE_PATH)
+
+print('' + '=' * len(start_message))
+print(start_message)
+print('' + '=' * len(start_message))
 
 # Load data
 df = load_uspto_file(FILE_PATH, max_samples=50000)

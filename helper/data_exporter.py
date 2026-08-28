@@ -197,37 +197,37 @@ def main(run_type="all"):
         # USPTO50k Mapped processing
         source_file = "data/raw/uspto50k/raw_train.csv"
         target_file = "data/uspto50k_mapped.csv"
-        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=False)
+        process_uspto_file(source_file, target_file, type="uspto", remove_mapping=False)
 
     if run_type in ["all", "uspto_unmapped"]:
         # USPTO50k Unmapped processing
         source_file = "data/raw/uspto50k/raw_train.csv"
         target_file = "data/uspto50k_unmapped.csv"
-        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=True)
+        process_uspto_file(source_file, target_file,  type="uspto", remove_mapping=True)
     
     if run_type in ["all", "uspto_test_mapped"]:
             # USPTO50k Mapped processing
             source_file = "data/raw/uspto50k/raw_test.csv"
             target_file = "data/uspto50k_test_mapped.csv"
-            process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=False)
+            process_uspto_file(source_file, target_file, type="uspto", remove_mapping=False)
     
     if run_type in ["all", "uspto_test_unmapped"]:
         # USPTO50k Unmapped processing
         source_file = "data/raw/uspto50k/raw_test.csv"
         target_file = "data/uspto50k_test_unmapped.csv"
-        process_uspto_file(source_file, target_file, max_samples=10000, type="uspto", remove_mapping=True)
+        process_uspto_file(source_file, target_file, type="uspto", remove_mapping=True)
     
     if run_type in ["all", "chemxai"]:
         # ChemXAI processing
         source_file = "data/raw/chemxai/cleaned_chemxai.csv"
         target_file = "data/chemxai/processed_train.csv"
-        process_chemxai_file(source_file, target_file, max_samples=10000, type="chemxai")
+        process_chemxai_file(source_file, target_file, type="chemxai")
 
     if run_type in ["all", "ocr"]:
         # OCR processing
         source_file = "data/raw/ocr/ocr_train.csv"
         target_file = "data/ocr/processed_train.csv"
-        process_ocr_file(source_file, target_file, max_samples=10000, type="ocr", remove_mapping=True)
+        process_ocr_file(source_file, target_file, type="ocr", remove_mapping=True)
     
     end_time = time.time()
     
@@ -239,4 +239,4 @@ if __name__ == "__main__":
     # Change run_type as needed: 
     # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
     # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
-    main(run_type="uspto_test_mapped")
+    main(run_type="uspto_unmapped")

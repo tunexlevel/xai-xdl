@@ -7,14 +7,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-    
+
 import warnings
 from mod.model import Seq2SeqTransformer
 from helper.utils import tokenize_smiles
 from helper.utils import decode_indices, valid_smiles_or_empty
 from rdkit import Chem, RDLogger
 import pandas as pd
-
 
 warnings.filterwarnings(
     "ignore",
@@ -27,16 +26,13 @@ warnings.filterwarnings(
 RDLogger.DisableLog("rdApp.error")
 RDLogger.DisableLog("rdApp.warning")
 
-    
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
 
 MODEL_PATH = ROOT / "pt" / "reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / "idx2token.json"
-
 
 
 # === Load vocab and model ===
@@ -49,7 +45,6 @@ try:
 except FileNotFoundError:
     print("❌ Error: Vocabulary files not found. Please download them from Colab.")
     exit()
-
 
 
 # Define special tokens
@@ -100,15 +95,15 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
 
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
-            src_tensor, sos_idx, eos_idx, beam_width=10, max_len=max_len
+            src_tensor, sos_idx, eos_idx, beam_width=1, max_len=max_len
         )
 
     for seq, score in beam_candidates:
         tokens = decode_indices(seq.tolist(), idx2token, sos_idx, eos_idx, pad_idx)
         smiles = "".join(tokens)
-        
+
         valid_smiles = valid_smiles_or_empty(smiles)
-            
+
         if valid_smiles:
             return valid_smiles
 
@@ -121,34 +116,18 @@ def predict_product_greedy(reactant_smiles, max_len=120):
 
     tokens = tokenize_smiles(reactant_smiles)
 
-    src_ids = [
-        token2idx.get(tok, token2idx["<unk>"])
-        for tok in tokens
-    ]
+    src_ids = [token2idx.get(tok, token2idx["<unk>"]) for tok in tokens]
 
     if not src_ids:
         return ""
 
-    src_tensor = torch.tensor(
-        src_ids,
-        dtype=torch.long,
-        device=device
-    ).unsqueeze(0)
+    src_tensor = torch.tensor(src_ids, dtype=torch.long, device=device).unsqueeze(0)
 
     with torch.no_grad():
-        generated = model.greedy_decode(
-            src_tensor,
-            sos_idx,
-            eos_idx,
-            max_len=max_len
-        )
+        generated = model.greedy_decode(src_tensor, sos_idx, eos_idx, max_len=max_len)
 
     tokens = decode_indices(
-        generated.squeeze(0).tolist(),
-        idx2token,
-        sos_idx,
-        eos_idx,
-        pad_idx
+        generated.squeeze(0).tolist(), idx2token, sos_idx, eos_idx, pad_idx
     )
 
     smiles = "".join(tokens)
@@ -181,32 +160,59 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     if limit is not None:
         df = df.head(limit)
 
-    correct = 0
+    valid_smiles_count = 0
+
+
+    invalid_smiles_count = 0
     checked = 0
+    correct = 0
 
     for _, row in df.iterrows():
+
         reactant = str(row["reactants"]).strip()
         target = str(row["products"]).strip()
+
         if not reactant or not target:
+            invalid_smiles_count += 1
             continue
 
-        pred = predict_product(reactant)
-        pred_canon = _canonical_smiles(pred)
         target_canon = _canonical_smiles(target)
 
-        checked += 1
-        if pred_canon == target_canon:
-            correct += 1
+        # Invalid target = bad dataset entry
+        if target_canon is None:
+            invalid_smiles_count += 1
+            continue
 
-        #show progress
-        if checked % 50 == 0:
-            print(f"Checked: {checked}, Correct: {correct}, Accuracy: {correct/checked:.4f}")  
-        
+            valid_smiles_count += 1
+
+            pred = predict_product(reactant)
+            pred_canon = _canonical_smiles(pred)
+
+            checked += 1
+
+            # Invalid prediction = incorrect prediction
+            if pred_canon is not None and pred_canon == target_canon:
+                correct += 1
+
+            if checked % 200 == 0:
+                accuracy = correct / checked if checked else 0.0
+
+                print(
+                    f"Checked: {checked}, "
+                    f"Correct: {correct}, "
+                    f"Accuracy: {accuracy:.4f}, "
+                    f"Valid_Smiles: {valid_smiles_count}, "
+                    f"Invalid_Smiles: {invalid_smiles_count}"
+                )
+
     accuracy_pct = (correct / checked * 100.0) if checked else 0.0
+
     return {
         "total": checked,
         "correct": correct,
         "accuracy_percent": accuracy_pct,
+        "valid_smiles": valid_smiles_count,
+        "invalid_smiles": invalid_smiles_count,
     }
 
 
@@ -214,7 +220,13 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    metrics = test_prediction_accuracy("data/uspto50k/tested.csv")
-    print(f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f}%")
+    input_file = "data/uspto50k_test_mapped.csv"
+    print("" + "=" * len(input_file))
+    print(input_file)
+    print("" + "=" * len(input_file))
+    metrics = test_prediction_accuracy(input_file)
+    print(
+        f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f} Invalid SMILES: {metrics['invalid_smiles']}, Valid SMILES: {metrics['valid_smiles']}"
+    )
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")

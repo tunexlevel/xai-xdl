@@ -58,7 +58,7 @@ def clean_and_tokenize(smiles):
     return tokenize_smiles(smiles)
 
 
-def build_vocab(smiles_list):
+def build_vocab(smiles_list, file_type=None):
     tokens = []
 
     for smi in smiles_list:
