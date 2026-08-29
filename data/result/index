@@ -1,5 +1,6 @@
+==================================
 #Experiment 1: USPTO50K MAPPED
-
+==================================
 experiment_id: 01
 dataset: USPTO50K
 mapping: YES
@@ -12,13 +13,73 @@ learning_rate: 1e-3
 batch_size: 32
 epochs: 20
 parameters: 
-train_loss: 
-val_loss: 
-top1: 
-top3: 
-top5:
-invalid_smiles:
-training_time: 
-inference_time: 
+train_loss: 0.0954
+val_pred: 95.52%
+top1: 76.38%
+top3: 83.40%
+top5: 84.16%
+invalid_smiles: 100 - 95.52
+training_time: 1765.04 seconds.
+inference_time: 23288.67 seconds.
 duplicate: 197
 remaining reactions: 39809
+reaction_level accuracy: 1.0000
+training_token accuracy: 0.9745
+
+==================================
+#Experiment 1: USPTO50K UNMAPPED
+==================================
+experiment_id: 02
+dataset: USPTO50K
+mapping: NO
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 
+learning_rate: 1e-3
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.1302
+val_pred: 95.52%
+top1: 76.38%
+top3: 83.40%
+top5: 84.16%
+invalid_smiles: 100 - 95.52
+training_time: 11636.02 seconds.
+inference_time: 23288.67 seconds.
+duplicate: 205
+remaining reactions: 39801
+reaction_level accuracy: 0.3200
+training_token accuracy: 0.9580
+
+
+
+==================================
+#Experiment 1: XXX
+==================================
+experiment_id: 00
+dataset: XXX
+mapping: 
+num_encoder_layers: 
+num_decoder_layers: 
+num_heads: 
+embedding_dim: 
+ffn_dim: 
+learning_rate: 
+batch_size: 
+epochs: 
+parameters: 
+train_loss:
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time:
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 
+training_token accuracy: 

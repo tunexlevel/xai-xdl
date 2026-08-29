@@ -46,7 +46,7 @@ device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
-FILE_NAME = "uspto50k_mapped"
+FILE_NAME = "uspto50k_unmapped"
 
 MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
 

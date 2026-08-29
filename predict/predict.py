@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 import warnings
 from mod.model import Seq2SeqTransformer
 from helper.utils import tokenize_smiles
-from helper.utils import decode_indices, valid_smiles_or_empty
+from helper.utils import decode_indices, valid_smiles_or_empty, strip_atom_mapping
 from rdkit import Chem, RDLogger
 import pandas as pd
 
@@ -29,7 +29,7 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-FILE_NAME = "uspto50k_mapped"
+FILE_NAME = "uspto50k_unmapped"
 MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
@@ -152,7 +152,13 @@ def _canonical_smiles(smiles):
 
 
 
+
 def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
+    out_file = f"data/{FILE_NAME}_predicted_result.csv"
+
+    # --------------------------------------------------------
+    # Load CSV & Validate Columns
+    # --------------------------------------------------------
     df = pd.read_csv(csv_path)
     if "reactants" not in df.columns or "products" not in df.columns:
         raise ValueError(
@@ -166,66 +172,131 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     invalid_smiles_count = 0
     checked = 0
     correct = 0
+    result_rows = []
 
+    # --------------------------------------------------------
+    # Evaluation Loop
+    # --------------------------------------------------------
     for _, row in df.iterrows():
         reactant = str(row["reactants"]).strip()
         target = str(row["products"]).strip()
 
-        if not reactant or not target or reactant.lower() == "nan" or target.lower() == "nan":
-            invalid_smiles_count += 1
+        if (
+            not reactant
+            or not target
+            or reactant.lower() == "nan"
+            or target.lower() == "nan"
+        ):
             continue
 
         target_canon = _canonical_smiles(target)
         reactant_canon = _canonical_smiles(reactant)
 
-        # Invalid target or reactant in dataset
+        # Skip rows where dataset itself contains invalid SMILES
         if target_canon is None or reactant_canon is None:
-            invalid_smiles_count += 1
             continue
 
-        valid_smiles_count += 1
-
-        # Run prediction
+        # Run model prediction
         pred = predict_product(reactant)
         pred_canon = _canonical_smiles(pred) if pred else None
 
         checked += 1
 
-        # Canonical match comparison
-        if pred_canon is not None and pred_canon == target_canon:
+        # Check validity and canonical match
+        is_valid_pred = pred_canon is not None
+        is_correct = is_valid_pred and (pred_canon == target_canon)
+
+        if is_valid_pred:
+            valid_smiles_count += 1
+        else:
+            invalid_smiles_count += 1
+
+        if is_correct:
             correct += 1
+
+        # Record individual row result
+        result_rows.append(
+            {
+                "reactant": strip_atom_mapping(reactant_canon),
+                "target": strip_atom_mapping(target_canon),
+                "predicted": strip_atom_mapping(pred_canon),
+                "is_valid_smiles": is_valid_pred,
+                "is_correct": is_correct,
+            }
+        )
 
         if checked % 200 == 0:
             accuracy = correct / checked if checked else 0.0
+            valid_p = valid_smiles_count / checked if checked else 0.0
+            invalid_p = invalid_smiles_count / checked if checked else 0.0
+
             print(
                 f"Checked: {checked}, "
                 f"Correct: {correct}, "
                 f"Accuracy: {accuracy:.4f}, "
-                f"Valid_Smiles: {valid_smiles_count}, "
-                f"Invalid_Smiles: {invalid_smiles_count}"
+                f"Valid_Smiles: {valid_smiles_count} ({valid_p:.2%}), "
+                f"Invalid_Smiles: {invalid_smiles_count} ({invalid_p:.2%})"
             )
 
+    # --------------------------------------------------------
+    # Final Metrics Computation
+    # --------------------------------------------------------
     accuracy_pct = (correct / checked * 100.0) if checked else 0.0
+    valid_smiles_pct = (valid_smiles_count / checked * 100.0) if checked else 0.0
+    invalid_smiles_pct = (invalid_smiles_count / checked * 100.0) if checked else 0.0
+
+    print(
+        f"\nFinal Summary: Checked: {checked} | Correct: {correct} | "
+        f"Accuracy: {accuracy_pct:.2f}% | Valid SMILES: {valid_smiles_pct:.2f}% | "
+        f"Invalid SMILES: {invalid_smiles_pct:.2f}%"
+    )
+
+    # --------------------------------------------------------
+    # Build DataFrame and Append Summary Row
+    # --------------------------------------------------------
+    results_df = pd.DataFrame(result_rows)
+
+    summary_row = pd.DataFrame(
+        [
+            {
+                "reactant": f"Total Checked: {checked} ",
+                "target": f"Correct: {correct}",
+                "predicted": f"Accuracy: {accuracy_pct:.2f}%",
+                "is_valid_smiles": f"Valid SMILES: {valid_smiles_count} ({valid_smiles_pct:.2f}%)",
+                "is_correct": f"Invalid SMILES: {invalid_smiles_count} ({invalid_smiles_pct:.2f}%)",
+            }
+        ]
+    )
+
+    final_df = pd.concat([results_df, summary_row], ignore_index=True)
+
+    # --------------------------------------------------------
+    # Export to CSV
+    # --------------------------------------------------------
+    final_df.to_csv(out_file, index=False)
+    print(f"Predictions successfully saved to: {out_file}")
 
     return {
         "total": checked,
         "correct": correct,
         "accuracy_percent": accuracy_pct,
         "valid_smiles": valid_smiles_count,
+        "valid_smiles_percent": valid_smiles_pct,
         "invalid_smiles": invalid_smiles_count,
+        "invalid_smiles_percent": invalid_smiles_pct,
     }
-
-# === Example ===
+    
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
     input_file = f"data/{FILE_NAME}_test.csv"
+    
     print("" + "=" * len(input_file))
     print(input_file)
     print("" + "=" * len(input_file))
     metrics = test_prediction_accuracy(input_file)
     print(
-        f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f} Invalid SMILES: {metrics['invalid_smiles']}, Valid SMILES: {metrics['valid_smiles']}"
+        f"Total checked: {metrics['total']}, Correct: {metrics['correct']}, Accuracy: {metrics['accuracy_percent']:.2f} Invalid SMILES: {metrics['invalid_smiles']}, Invalid SMILES %: {metrics['invalid_smiles_percent']:.2f}, Valid SMILES: {metrics['valid_smiles']}, Valid SMILES %: {metrics['valid_smiles_percent']:.2f}"
     )
     end_time = time.time()
     print(f"Test completed in {end_time - start_time:.2f} seconds.")

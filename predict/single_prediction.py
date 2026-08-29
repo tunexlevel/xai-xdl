@@ -33,7 +33,7 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-FILE_NAME = "uspto50k_unmapped"
+FILE_NAME = "uspto50k_mapped"
 MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
@@ -257,30 +257,32 @@ def main(file_name):
     
     # USPTO-50k test set (unmapped)
     upsto_unmapped_test = [
-            'CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1C.O=C1CCC(=O)N1Br,CCOC(=O)c1nn(-c2ccc(Cl)cc2Cl)c(-c2ccc(OC)cc2)c1CBr',
-            'CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.N#Cc1cc(-c2cccc([N+](=O)[O-])c2)c2nc(N)sc2c1,CC(C)(C)OC(=O)Nc1nc2c(-c3cccc([N+](=O)[O-])c3)cc(C#N)cc2s1',
-            'NCc1ccccc1S(=O)(=O)C1CC1.O=C(OC(=O)C(F)(F)F)C(F)(F)F,O=C(NCc1ccccc1S(=O)(=O)C1CC1)C(F)(F)F',
-            'C/C=C/C(=O)O[Si](C)(C)C.O=C1CCC(=O)N1Br,C[Si](C)(C)OC(=O)/C=C/CBr',
-            'CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(Sc4ccccc4)cc3c2C1.O=C(OO)c1cccc(Cl)c1,CC(C)(C)OC(=O)N1CCc2oc3c(Cl)cc(S(=O)c4ccccc4)cc3c2C1',
-            'CC(C)(C)OC(=O)OC(=O)OC(C)(C)C.O=Cc1c[nH]cn1,CC(C)(C)OC(=O)n1cnc(C=O)c1',
-            'Cc1cnc(Cl)cc1Cl.O=C1CCC(=O)N1Br,Clc1cc(Cl)c(CBr)cn1',
-            'COc1nc2ccc(C(O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1,COc1nc2ccc(C(=O)c3cnnn3C)cc2c(Cl)c1Cc1ccc(C(F)(F)F)cc1',
-            'Cc1cc(/C=C/C(F)(F)F)ccc1C(=O)Nc1ccc2sc(C(C)O)nc2c1,CC(=O)c1nc2cc(NC(=O)c3ccc(/C=C/C(F)(F)F)cc3C)ccc2s1',
-            'CCOC(=O)C1CCC(=O)CC1.OCCO,CCOC(=O)C1CCC2(CC1)OCCO2',
+            'Cc1nc(N)sc1C(=O)NCc1ccccc1.O=C(Cl)Cc1ccccc1,Cc1nc(NC(=O)Cc2ccccc2)sc1C(=O)NCc1ccccc1',
+            'Cc1ccccc1C=O.Nc1cccc(-c2ccnc3c(C(=O)c4cccs4)cnn23)c1,Cc1ccccc1CNc1cccc(-c2ccnc3c(C(=O)c4cccs4)cnn23)c1',
+            'C[C@H](NC(=O)OC(C)(C)C)[C@H](O)CN.O=S(=O)(Cl)c1ccccn1,C[C@H](NC(=O)OC(C)(C)C)[C@@H](O)CNS(=O)(=O)c1ccccn1',
+            'CCOC(=O)c1sc(C(=O)OC(C)(C)C)cc1OC(C)(C)C,CC(C)(C)OC(=O)c1cc(OC(C)(C)C)c(C(=O)O)s1',
+            'CCOC[C@H](O)C(=O)OC.Clc1cccnc1-n1ncc2c(Cl)ncnc21,CCOC[C@H](Oc1ncnc2c1cnn2-c1ncccc1Cl)C(=O)OC',
+            'COC(=O)c1ccc2c(c1)nc(NC(=O)c1ccno1)n2C[C@H]1CCCN1C(=O)OC(C)(C)C,CC(C)(C)OC(=O)N1CCC[C@@H]1Cn1c(NC(=O)c2ccno2)nc2cc(CO)ccc21',
+            'COC(=O)[C@@H]1Cc2ccc(C3=C[C@@H](C(=O)N[C@@H]4CCCc5ccccc54)N(C(=O)OC(C)(C)C)C3)cc2CN1C(=O)OC(C)(C)C,COC(=O)[C@@H]1Cc2ccc([C@H]3C[C@@H](C(=O)N[C@@H]4CCCc5ccccc54)N(C(=O)OC(C)(C)C)C3)cc2CN1C(=O)OC(C)(C)C',
+            'COC(=O)c1ccc(Br)c(O)c1.OCC1CC1,COC(=O)c1ccc(Br)c(OCC2CC2)c1',
+            'CCCC1(CC(=O)OCC)OCCc2c1[nH]c1c(C)c(C(=O)O)cc(C#N)c21,CCCC1(CC(=O)OCC)OCCc2c1[nH]c1c(C)c(CO)cc(C#N)c21',
+            'COc1ccc(C=O)c2cc(C(F)F)nn12.C[CH2][Mg+],CCC(O)c1ccc(OC)n2nc(C(F)F)cc12',
+            'CCOCCBr.O=Cc1ccc(O)c(O)c1,CCOCCOc1ccc(C=O)cc1O',
         ]
 
     # USPTO-50k test set (mapped)
     upsto_mapped_test = [
-            'O=C1CCC(=O)N1[Br:1].[CH3:2][CH2:3][O:4][C:5](=[O:6])[c:7]1[n:8][n:9](-[c:10]2[cH:11][cH:12][c:13]([Cl:14])[cH:15][c:16]2[Cl:17])[c:18](-[c:19]2[cH:20][cH:21][c:22]([O:23][CH3:24])[cH:25][cH:26]2)[c:27]1[CH3:28],[Br:1][CH2:28][c:27]1[c:7]([C:5]([O:4][CH2:3][CH3:2])=[O:6])[n:8][n:9](-[c:10]2[cH:11][cH:12][c:13]([Cl:14])[cH:15][c:16]2[Cl:17])[c:18]1-[c:19]1[cH:20][cH:21][c:22]([O:23][CH3:24])[cH:25][cH:26]1',
-            'CC(C)(C)OC(=O)O[C:6]([O:5][C:2]([CH3:1])([CH3:3])[CH3:4])=[O:7].[N:8]#[C:9][c:10]1[cH:11][c:12](-[c:13]2[cH:14][cH:15][cH:16][c:17]([N+:18](=[O:19])[O-:20])[cH:21]2)[c:22]2[n:23][c:24]([NH2:25])[s:26][c:27]2[cH:28]1,[CH3:1][C:2]([CH3:3])([CH3:4])[O:5][C:6](=[O:7])[NH:25][c:24]1[n:23][c:22]2[c:12](-[c:13]3[cH:14][cH:15][cH:16][c:17]([N+:18](=[O:19])[O-:20])[cH:21]3)[cH:11][c:10]([C:9]#[N:8])[cH:28][c:27]2[s:26]1',
-            'O=C(O[C:1](=[O:2])[C:3]([F:4])([F:5])[F:6])C(F)(F)F.[NH2:7][CH2:8][c:9]1[cH:10][cH:11][cH:12][cH:13][c:14]1[S:15](=[O:16])(=[O:17])[CH:18]1[CH2:19][CH2:20]1,[C:1](=[O:2])([C:3]([F:4])([F:5])[F:6])[NH:7][CH2:8][c:9]1[cH:10][cH:11][cH:12][cH:13][c:14]1[S:15](=[O:16])(=[O:17])[CH:18]1[CH2:19][CH2:20]1',
-            'O=C1CCC(=O)N1[Br:1].[CH3:2]/[CH:3]=[CH:4]/[C:5](=[O:6])[O:7][Si:8]([CH3:9])([CH3:10])[CH3:11],[Br:1][CH2:2]/[CH:3]=[CH:4]/[C:5](=[O:6])[O:7][Si:8]([CH3:9])([CH3:10])[CH3:11]',
-            'O=C(O[OH:1])c1cccc(Cl)c1.[CH3:2][C:3]([CH3:4])([CH3:5])[O:6][C:7](=[O:8])[N:9]1[CH2:10][CH2:11][c:12]2[o:13][c:14]3[c:15]([Cl:16])[cH:17][c:18]([S:19][c:20]4[cH:21][cH:22][cH:23][cH:24][cH:25]4)[cH:26][c:27]3[c:28]2[CH2:29]1,[O:1]=[S:19]([c:18]1[cH:17][c:15]([Cl:16])[c:14]2[o:13][c:12]3[c:28]([c:27]2[cH:26]1)[CH2:29][N:9]([C:7]([O:6][C:3]([CH3:2])([CH3:4])[CH3:5])=[O:8])[CH2:10][CH2:11]3)[c:20]1[cH:21][cH:22][cH:23][cH:24][cH:25]1',
-            'CC(C)(C)OC(=O)O[C:6]([O:5][C:2]([CH3:1])([CH3:3])[CH3:4])=[O:7].[O:8]=[CH:9][c:10]1[cH:11][nH:12][cH:13][n:14]1,[CH3:1][C:2]([CH3:3])([CH3:4])[O:5][C:6](=[O:7])[n:12]1[cH:11][c:10]([CH:9]=[O:8])[n:14][cH:13]1',
-            'O=C1CCC(=O)N1[Br:1].[CH3:2][c:3]1[cH:4][n:5][c:6]([Cl:7])[cH:8][c:9]1[Cl:10],[Br:1][CH2:2][c:3]1[cH:4][n:5][c:6]([Cl:7])[cH:8][c:9]1[Cl:10]',
-            '[CH3:1][O:2][c:3]1[n:4][c:5]2[cH:6][cH:7][c:8]([CH:9]([OH:10])[c:11]3[cH:12][n:13][n:14][n:15]3[CH3:16])[cH:17][c:18]2[c:19]([Cl:20])[c:21]1[CH2:22][c:23]1[cH:24][cH:25][c:26]([C:27]([F:28])([F:29])[F:30])[cH:31][cH:32]1,[CH3:1][O:2][c:3]1[n:4][c:5]2[cH:6][cH:7][c:8]([C:9](=[O:10])[c:11]3[cH:12][n:13][n:14][n:15]3[CH3:16])[cH:17][c:18]2[c:19]([Cl:20])[c:21]1[CH2:22][c:23]1[cH:24][cH:25][c:26]([C:27]([F:28])([F:29])[F:30])[cH:31][cH:32]1',
-            '[CH3:1][c:2]1[cH:3][c:4](/[CH:5]=[CH:6]/[C:7]([F:8])([F:9])[F:10])[cH:11][cH:12][c:13]1[C:14](=[O:15])[NH:16][c:17]1[cH:18][cH:19][c:20]2[s:21][c:22]([CH:23]([CH3:24])[OH:25])[n:26][c:27]2[cH:28]1,[CH3:1][c:2]1[cH:3][c:4](/[CH:5]=[CH:6]/[C:7]([F:8])([F:9])[F:10])[cH:11][cH:12][c:13]1[C:14](=[O:15])[NH:16][c:17]1[cH:18][cH:19][c:20]2[s:21][c:22]([C:23]([CH3:24])=[O:25])[n:26][c:27]2[cH:28]1',
-            'O[CH2:1][CH2:2][OH:3].[CH3:4][CH2:5][O:6][C:7](=[O:8])[CH:9]1[CH2:10][CH2:11][C:12](=[O:13])[CH2:14][CH2:15]1,[CH2:1]1[CH2:2][O:3][C:12]2([CH2:11][CH2:10][CH:9]([C:7]([O:6][CH2:5][CH3:4])=[O:8])[CH2:15][CH2:14]2)[O:13]1',
+            'Cl[C:1](=[O:2])[CH2:3][c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1.[CH3:10][c:11]1[n:12][c:13]([NH2:14])[s:15][c:16]1[C:17](=[O:18])[NH:19][CH2:20][c:21]1[cH:22][cH:23][cH:24][cH:25][cH:26]1,[C:1](=[O:2])([CH2:3][c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[NH:14][c:13]1[n:12][c:11]([CH3:10])[c:16]([C:17](=[O:18])[NH:19][CH2:20][c:21]2[cH:22][cH:23][cH:24][cH:25][cH:26]2)[s:15]1',
+            'O=[CH:1][c:2]1[c:3]([CH3:4])[cH:5][cH:6][cH:7][cH:8]1.[NH2:9][c:10]1[cH:11][cH:12][cH:13][c:14](-[c:15]2[cH:16][cH:17][n:18][c:19]3[c:20]([C:21](=[O:22])[c:23]4[cH:24][cH:25][cH:26][s:27]4)[cH:28][n:29][n:30]23)[cH:31]1,[CH2:1]([c:2]1[c:3]([CH3:4])[cH:5][cH:6][cH:7][cH:8]1)[NH:9][c:10]1[cH:11][cH:12][cH:13][c:14](-[c:15]2[cH:16][cH:17][n:18][c:19]3[c:20]([C:21](=[O:22])[c:23]4[cH:24][cH:25][cH:26][s:27]4)[cH:28][n:29][n:30]23)[cH:31]1',
+            'Cl[S:15](=[O:16])(=[O:17])[c:18]1[cH:19][cH:20][cH:21][cH:22][n:23]1.[CH3:1][C@H:2]([NH:3][C:4](=[O:5])[O:6][C:7]([CH3:8])([CH3:9])[CH3:10])[C@H:11]([OH:12])[CH2:13][NH2:14],[CH3:1][C@H:2]([NH:3][C:4](=[O:5])[O:6][C:7]([CH3:8])([CH3:9])[CH3:10])[C@@H:11]([OH:12])[CH2:13][NH:14][S:15](=[O:16])(=[O:17])[c:18]1[cH:19][cH:20][cH:21][cH:22][n:23]1',
+            'CC[O:1][C:2](=[O:3])[c:4]1[s:5][c:6]([C:7](=[O:8])[O:9][C:10]([CH3:11])([CH3:12])[CH3:13])[cH:14][c:15]1[O:16][C:17]([CH3:18])([CH3:19])[CH3:20],[OH:1][C:2](=[O:3])[c:4]1[s:5][c:6]([C:7](=[O:8])[O:9][C:10]([CH3:11])([CH3:12])[CH3:13])[cH:14][c:15]1[O:16][C:17]([CH3:18])([CH3:19])[CH3:20]',
+            'Cl[c:1]1[c:2]2[cH:3][n:4][n:5](-[c:6]3[c:7]([Cl:8])[cH:9][cH:10][cH:11][n:12]3)[c:13]2[n:14][cH:15][n:16]1.[CH3:17][CH2:18][O:19][CH2:20][C@H:21]([OH:22])[C:23](=[O:24])[O:25][CH3:26],[c:1]1([O:22][C@@H:21]([CH2:20][O:19][CH2:18][CH3:17])[C:23](=[O:24])[O:25][CH3:26])[c:2]2[cH:3][n:4][n:5](-[c:6]3[c:7]([Cl:8])[cH:9][cH:10][cH:11][n:12]3)[c:13]2[n:14][cH:15][n:16]1',
+            'CO[C:1](=[O:2])[c:3]1[cH:4][cH:5][c:6]2[c:7]([cH:8]1)[n:9][c:10]([NH:11][C:12](=[O:13])[c:14]1[cH:15][cH:16][n:17][o:18]1)[n:19]2[CH2:20][C@H:21]1[CH2:22][CH2:23][CH2:24][N:25]1[C:26](=[O:27])[O:28][C:29]([CH3:30])([CH3:31])[CH3:32],[CH2:1]([OH:2])[c:3]1[cH:4][cH:5][c:6]2[c:7]([cH:8]1)[n:9][c:10]([NH:11][C:12](=[O:13])[c:14]1[cH:15][cH:16][n:17][o:18]1)[n:19]2[CH2:20][C@H:21]1[CH2:22][CH2:23][CH2:24][N:25]1[C:26](=[O:27])[O:28][C:29]([CH3:30])([CH3:31])[CH3:32]',
+            '[CH3:1][O:2][C:3](=[O:4])[C@@H:5]1[CH2:6][c:7]2[cH:8][cH:9][c:10]([C:11]3=[CH:12][C@@H:13]([C:14](=[O:15])[NH:16][C@@H:17]4[CH2:18][CH2:19][CH2:20][c:21]5[cH:22][cH:23][cH:24][cH:25][c:26]54)[N:27]([C:28](=[O:29])[O:30][C:31]([CH3:32])([CH3:33])[CH3:34])[CH2:35]3)[cH:36][c:37]2[CH2:38][N:39]1[C:40](=[O:41])[O:42][C:43]([CH3:44])([CH3:45])[CH3:46],[CH3:1][O:2][C:3](=[O:4])[C@@H:5]1[CH2:6][c:7]2[cH:8][cH:9][c:10]([C@H:11]3[CH2:12][C@@H:13]([C:14](=[O:15])[NH:16][C@@H:17]4[CH2:18][CH2:19][CH2:20][c:21]5[cH:22][cH:23][cH:24][cH:25][c:26]54)[N:27]([C:28](=[O:29])[O:30][C:31]([CH3:32])([CH3:33])[CH3:34])[CH2:35]3)[cH:36][c:37]2[CH2:38][N:39]1[C:40](=[O:41])[O:42][C:43]([CH3:44])([CH3:45])[CH3:46]',
+            'O[CH2:1][CH:2]1[CH2:3][CH2:4]1.[CH3:5][O:6][C:7](=[O:8])[c:9]1[cH:10][cH:11][c:12]([Br:13])[c:14]([OH:15])[cH:16]1,[CH2:1]([CH:2]1[CH2:3][CH2:4]1)[O:15][c:14]1[c:12]([Br:13])[cH:11][cH:10][c:9]([C:7]([O:6][CH3:5])=[O:8])[cH:16]1',
+            'O=[C:1]([c:2]1[c:3]([CH3:4])[c:5]2[nH:6][c:7]3[c:8]([c:9]2[c:10]([C:11]#[N:12])[cH:13]1)[CH2:14][CH2:15][O:16][C:17]3([CH2:18][CH2:19][CH3:20])[CH2:21][C:22](=[O:23])[O:24][CH2:25][CH3:26])[OH:27],[CH2:1]([c:2]1[c:3]([CH3:4])[c:5]2[nH:6][c:7]3[c:8]([c:9]2[c:10]([C:11]#[N:12])[cH:13]1)[CH2:14][CH2:15][O:16][C:17]3([CH2:18][CH2:19][CH3:20])[CH2:21][C:22](=[O:23])[O:24][CH2:25][CH3:26])[OH:27]',
+            '[CH3:1][O:2][c:3]1[cH:4][cH:5][c:6]([CH:7]=[O:8])[c:9]2[cH:10][c:11]([CH:12]([F:13])[F:14])[n:15][n:16]12.[Mg+][CH2:17][CH3:18],[CH3:1][O:2][c:3]1[cH:4][cH:5][c:6]([CH:7]([OH:8])[CH2:17][CH3:18])[c:9]2[cH:10][c:11]([CH:12]([F:13])[F:14])[n:15][n:16]12',
+            'Br[CH2:1][CH2:2][O:3][CH2:4][CH3:5].[O:6]=[CH:7][c:8]1[cH:9][cH:10][c:11]([OH:12])[c:13]([OH:14])[cH:15]1,[CH2:1]([CH2:2][O:3][CH2:4][CH3:5])[O:12][c:11]1[cH:10][cH:9][c:8]([CH:7]=[O:6])[cH:15][c:13]1[OH:14]',
         ]
     
     correct_count = 0
