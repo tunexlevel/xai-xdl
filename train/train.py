@@ -20,18 +20,18 @@ from tqdm import tqdm
 
 # Hyperparameters
 BATCH_SIZE = 32
-EMB_DIM = 256
+EMB_DIM = 512
 HIDDEN_DIM = 512
 MAX_LEN = 120
 EPOCHS = 20
-LEARNING_RATE = 3e-4
+LEARNING_RATE = 5e-4
 PAD_TOKEN = "<pad>"
-DATASET_NAME = "uspto50k_mapped"
-FILE_NAME = f"{DATASET_NAME}_lr_3e-4" 
+DATASET_NAME = "uspto50k_unmapped"
+FILE_NAME = f"{DATASET_NAME}_ed_6-4_emb_512" 
 FILE_PATH = ROOT / "data" /  f"{DATASET_NAME}.csv"
 HEADS = 8
-NUM_ENCODER_LAYERS = 3
-NUM_DECODER_LAYERS = 3
+NUM_ENCODER_LAYERS = 6
+NUM_DECODER_LAYERS = 6
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

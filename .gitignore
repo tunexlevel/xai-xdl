@@ -29,6 +29,8 @@ Thumbs.db
 *.h5
 outputs/
 logs/
+pt/dump
+tokens/dump
 
 
 data/raw/

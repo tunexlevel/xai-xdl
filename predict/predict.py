@@ -29,10 +29,11 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-FILE_NAME = "uspto50k_unmapped"
-MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
+DATASET_NAME = "uspto50k_mapped"
+FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
 
 
 # === Load vocab and model ===
@@ -57,7 +58,7 @@ eos_idx = token2idx.get("<eos>", 2)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 N_HEADS = 8
-N_LAYERS = 3
+N_LAYERS = 6
 
 model = Seq2SeqTransformer(
     input_dim=len(token2idx),
@@ -289,10 +290,10 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    input_file = f"data/{FILE_NAME}_test.csv"
+    input_file = f"data/{DATASET_NAME}_test.csv"
     
     print("" + "=" * len(input_file))
-    print(input_file)
+    print(input_file + '@' + FILE_NAME)
     print("" + "=" * len(input_file))
     metrics = test_prediction_accuracy(input_file)
     print(
