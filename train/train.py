@@ -20,14 +20,14 @@ from tqdm import tqdm
 
 # Hyperparameters
 BATCH_SIZE = 32
-EMB_DIM = 512
+EMB_DIM = 256
 HIDDEN_DIM = 512
 MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 5e-4
 PAD_TOKEN = "<pad>"
 DATASET_NAME = "uspto50k_unmapped"
-FILE_NAME = f"{DATASET_NAME}_ed_6-4_emb_512" 
+FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
 FILE_PATH = ROOT / "data" /  f"{DATASET_NAME}.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 6

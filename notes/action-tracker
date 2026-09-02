@@ -99,3 +99,21 @@ I have some questions to ask on Expriment 1 (reactant->product) before I proceed
 2. I have used a Transformer model with 3 encoder layers and 8 attention heads. Do you think increasing the number of encoder layers or attention heads would help improve the accuracy?
 3. My Model learns the sequencial token produce is it same as learning chemistry transformation and is there a way it can actually learn that for Experiment 1 or it can only be possible with Experiment 2.
 4. If I implent Experiment 2, can my system improves better in terms of predicting chemistry and the Top 1 accuracy will increase?
+
+
+Next action: 
+1. Record your results for uspto-50k.
+2. Use the best hyperparameter and train MIT for seperated (no reagent) and mixed (with reagent)
+3. Use the best hyperparameter and train OCR
+4. Perform testing
+5. Record results for mit and ocr
+6. Perform experiment for retrosynthesis with uspoto-50k
+7. Record results for retro-uspoto-50k
+8. Perform experiment for retrosynthesis with mit and ocr
+9. Record results for retro mit and ocr
+10. Connect best result to frontend via API
+11. Generate XDL for the product
+12. Display attention weight heatmap
+13. Display multiple results with confidence score
+
+

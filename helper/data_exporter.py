@@ -14,6 +14,20 @@ def load_uspto_file(path, max_samples=None, type=None):
                 df.columns = ['reactants', 'products']
             else:
                 raise ValueError(f"Expected columns 'reactants' and 'products' not found in {path}")
+        elif type == "mit":
+            if len(df.columns) >= 1:
+                    df.columns = ['reactions']
+                    
+                    split_smiles = df['reactions'].str.split(">", expand=True)
+                    
+                    if split_smiles.shape[1] >= 3:
+                        df['reactants'] = split_smiles[0].str.strip()
+                        df['products'] = split_smiles[2].str.strip()  # skip reagents
+                    else:
+                        raise ValueError(f"Unexpected reaction column format in {path}")
+            else:
+                raise ValueError(f"Unsupported file format in {path}")
+        
         else:
             # Handle raw USPTO CSV format: id,class,reactants>reagents>production
             if len(df.columns) >= 3:
@@ -228,6 +242,20 @@ def main(run_type="all"):
         source_file = "data/raw/ocr/ocr_train.csv"
         target_file = "data/ocr/processed_train.csv"
         process_ocr_file(source_file, target_file, type="ocr", remove_mapping=True)
+        
+        
+    if run_type in ["all", "uspto_mit_unmapped"]:
+        # OCR processing
+        source_file = "data/raw/uspto_mit/USPTO_MIT.csv"
+        target_file = "data/uspto_mit_unmapped.csv"
+        process_uspto_file(source_file, target_file, type="mit", remove_mapping=False)
+        
+    
+    if run_type in ["all", "uspto_mit_mapped"]:
+        # OCR processing
+        source_file = "data/raw/uspto_mit/USPTO_MIT.csv"
+        target_file = "data/uspto_mit_mapped.csv"
+        process_uspto_file(source_file, target_file, type="mit", remove_mapping=True)
     
     end_time = time.time()
     
@@ -239,4 +267,4 @@ if __name__ == "__main__":
     # Change run_type as needed: 
     # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
     # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
-    main(run_type="uspto_unmapped")
+    main(run_type="uspto_mit_unmapped")

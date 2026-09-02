@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 import warnings
 from mod.model import Seq2SeqTransformer
 from helper.utils import tokenize_smiles
-from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles
+from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles, strip_atom_mapping
 from rdkit import Chem, RDLogger
 import pandas as pd
 
@@ -33,10 +33,11 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-FILE_NAME = "uspto50k_mapped"
-MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
+DATASET_NAME = "uspto50k_unmapped"
+FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
 
 
 
@@ -62,7 +63,7 @@ eos_idx = token2idx.get("<eos>", 2)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 N_HEADS = 8
-N_LAYERS = 3
+N_LAYERS = 6
 
 model = Seq2SeqTransformer(
     input_dim=len(token2idx),
@@ -290,25 +291,31 @@ def main(file_name):
     correct_percentage = 0
     
     if(file_name == 'uspto50k_unmapped'):
-        data_set = upsto_unmapped_test
+        data_set = simple_ocr #upsto_unmapped_test
         
     if(file_name == 'uspto50k_mapped'):
-            data_set = upsto_mapped_test
+            data_set = simple_ocr #upsto_mapped_test
         
     
     # Run the accuracy test on the provided data
     for reaction in data_set:
         reactants, products = reaction.split(",")
-        # reactants = map_smiles(reactants)
-        # products = map_smiles(products)
-        predicted_product = predict_product_greedy(reactants)
+        if(file_name == 'uspto50k_mapped'):
+            reactants = map_smiles(reactants)
+            products = map_smiles(products)
+        
         beam_prediction = predict_product(reactants, target_smiles=products)
-        correct = beam_prediction == products or predicted_product == products
+        correct = beam_prediction == products 
         checked += 1
         if correct:
             correct_count += 1
-        print(f"Reactants: {reactants} | Correct: {correct} | Predicted Product: {predicted_product} | Beam Product: {beam_prediction} | Target Product: {products}")  
-    
+        
+        if(file_name == 'uspto50k_mapped'):
+            print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(beam_prediction)} | Target Product: {strip_atom_mapping(products)}")  
+        else:
+            print(f"Reactants: {reactants} | Correct: {correct} | Beam Product: {beam_prediction} | Target Product: {products}")  
+                   
+        
     correct_percentage = correct_count/checked
     
     print(f"Total: {checked}, Correct: {correct_count}, Accuracy: {correct_percentage}")
@@ -320,7 +327,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    main(FILE_NAME)
+    main(DATASET_NAME)
     
     end_time = time.time()
     
