@@ -24,7 +24,52 @@ TOKEN_REGEX = r"""
 token_pattern = re.compile(TOKEN_REGEX, re.X)
 
 
+from rdkit import Chem
+
 def map_smiles(smiles):
+    """
+    Convert an unmapped SMILES into an atom-mapped SMILES safely,
+    handling edge cases where standard sanitization fails.
+    """
+    if not smiles or not isinstance(smiles, str):
+        return None
+
+    smiles = smiles.strip()
+
+    # Step 1: Try standard load first
+    mol = Chem.MolFromSmiles(smiles)
+
+    # Step 2: Fallback if standard sanitization fails due to valence/aromaticity
+    if mol is None:
+        mol = Chem.MolFromSmiles(smiles, sanitize=False)
+        
+        if mol is None:
+            return None
+        try:
+            # Update cache without strict valence enforcement
+            mol.UpdatePropertyCache(strict=False)
+            
+            # Sanitize everything EXCEPT strict property (valence) checks
+            Chem.SanitizeMol(
+                mol,
+                sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES
+            )
+        except Exception:
+            return None
+
+    # Step 3: Assign sequential atom-map numbers
+    for atom_idx, atom in enumerate(mol.GetAtoms(), start=1):
+        atom.SetAtomMapNum(atom_idx)
+
+    # Step 4: Export with canonical ordering
+    try:
+        return Chem.MolToSmiles(mol, canonical=True)
+    except Exception:
+        print (smiles)
+        # If aromaticity/kekulization fails during export, write without strict kekulization
+        return Chem.MolToSmiles(mol, canonical=True, kekuleSmiles=False)
+
+def map_smiles_old(smiles):
     """
     Convert an unmapped SMILES into an atom-mapped SMILES.
 

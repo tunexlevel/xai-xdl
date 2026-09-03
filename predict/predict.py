@@ -29,7 +29,7 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-DATASET_NAME = "uspto50k_mapped"
+DATASET_NAME = "uspto_mit_unmapped"
 FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"

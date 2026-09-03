@@ -26,12 +26,12 @@ MAX_LEN = 120
 EPOCHS = 20
 LEARNING_RATE = 5e-4
 PAD_TOKEN = "<pad>"
-DATASET_NAME = "uspto50k_unmapped"
-FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
+DATASET_NAME = "uspto_mit_mapped"
+FILE_NAME = f"{DATASET_NAME}_ed_4-4" 
 FILE_PATH = ROOT / "data" /  f"{DATASET_NAME}.csv"
 HEADS = 8
-NUM_ENCODER_LAYERS = 6
-NUM_DECODER_LAYERS = 6
+NUM_ENCODER_LAYERS = 4
+NUM_DECODER_LAYERS = 4
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,7 +42,7 @@ print(start_message)
 print('' + '=' * len(start_message))
 
 # Load data
-df = load_uspto_file(FILE_PATH, max_samples=50000)
+df = load_uspto_file(FILE_PATH)
 all_smiles = df['reactants'].tolist() + df['products'].tolist()
 
 # Build vocabulary

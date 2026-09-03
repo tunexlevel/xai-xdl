@@ -2,6 +2,7 @@ import time
 
 import pandas as pd
 from rdkit import Chem
+from utils import map_smiles
 
 
 def load_uspto_file(path, max_samples=None, type=None):
@@ -82,14 +83,18 @@ def process_uspto_file(input_path, output_path, max_samples=None, type=None, rem
         # Remove atom mapping from reactants and products
         df['reactants'] = df['reactants'].apply(clean_smiles).apply(remove_atom_mapping)
         df['products'] = df['products'].apply(clean_smiles).apply(remove_atom_mapping)
-
     else:
-        # Clean SMILES without removing atom mapping
-        df['reactants'] = df['reactants'].apply(clean_smiles)
-        df['products'] = df['products'].apply(clean_smiles)
-    
-    # Drop rows with None values after mapping removal
+        # Clean SMILES while adding atom mapping safely
+        # map_smiles should return None on failure rather than crashing
+        df['reactants'] = df['reactants'].apply(clean_smiles).apply(map_smiles)
+        df['products'] = df['products'].apply(clean_smiles).apply(map_smiles)
+            
+    # Drop rows that failed parsing/mapping
+    initial_count = len(df)
     df = df.dropna(subset=['reactants', 'products'])
+    dropped = initial_count - len(df)
+    if dropped > 0:
+        print(f"Dropped {dropped} invalid/unmappable reactions.")
 
     # Save the processed DataFrame to a new CSV file
     try:
@@ -248,14 +253,14 @@ def main(run_type="all"):
         # OCR processing
         source_file = "data/raw/uspto_mit/USPTO_MIT.csv"
         target_file = "data/uspto_mit_unmapped.csv"
-        process_uspto_file(source_file, target_file, type="mit", remove_mapping=False)
+        process_uspto_file(source_file, target_file, type="mit", remove_mapping=True)
         
     
     if run_type in ["all", "uspto_mit_mapped"]:
         # OCR processing
-        source_file = "data/raw/uspto_mit/USPTO_MIT.csv"
+        source_file = "data/uspto_mit_unmapped.csv"
         target_file = "data/uspto_mit_mapped.csv"
-        process_uspto_file(source_file, target_file, type="mit", remove_mapping=True)
+        process_uspto_file(source_file, target_file, type="ocr", remove_mapping=False)
     
     end_time = time.time()
     
@@ -267,4 +272,4 @@ if __name__ == "__main__":
     # Change run_type as needed: 
     # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
     # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
-    main(run_type="uspto_mit_unmapped")
+    main(run_type="uspto_mit_mapped")

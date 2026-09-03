@@ -33,7 +33,7 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-DATASET_NAME = "uspto50k_unmapped"
+DATASET_NAME = "uspto_mit_unmapped"
 FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
@@ -290,6 +290,8 @@ def main(file_name):
     checked = 0
     correct_percentage = 0
     
+    data_set = simple_ocr #upsto_unmapped_test 
+    
     if(file_name == 'uspto50k_unmapped'):
         data_set = simple_ocr #upsto_unmapped_test
         
@@ -327,7 +329,9 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    main(DATASET_NAME)
+    # main(DATASET_NAME)
+    token = 'CCNc1ccncc1[N+](=O)[O-].CS[CH2+]1SC(=C2Sc3ccccc3N2C)C(=O)N1Cc1ccccc1'
+    print(map_smiles(token))
     
     end_time = time.time()
     

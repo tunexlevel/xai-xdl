@@ -1,0 +1,433 @@
+==================================
+#Experiment 1_01: USPTO50K MAPPED - ATOM MAPPING
+==================================
+experiment_id: 01
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 1e-3
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.0954
+val_pred: 82.54% (Beam Width: 1)
+inval_pred: 17.46% (Beam Width: 1)
+top1: 70.53% (Beam Width: 1)
+top1: 76.38% (Beam Width: 10)
+top3: 83.40% (Beam Width: 10)
+top5: 84.16% (Beam Width: 10)
+invalid_smiles: 100 - 95.52
+training_time: 1765.04 seconds.
+inference_time: 23288.67 seconds. (Beam Width: 10)
+inference_time: 434.62 seconds. (Beam Width: 1)
+duplicate: 197
+remaining reactions: 39809
+reaction_level accuracy: 1.0000
+training_token accuracy: 0.9745
+
+==================================
+#Experiment 1_02: USPTO50K UNMAPPED - ATOM MAPPING
+==================================
+experiment_id: 02
+dataset: USPTO50K
+mapping: NO
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 1e-3
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.1302
+val_pred: 95.52%  (Beam Width: 1)
+inval_pred: 17.46% (Beam Width: 1)
+top1: 51.61% (Beam Width: 1)
+top1: 56.60% (Beam Width: 10)
+top3: 69.19% (Beam Width: 10)
+top5: 72.33% (Beam Width: 10)
+invalid_smiles: 100 - 95.52
+training_time: 11636.02 seconds.
+inference_time: 21467.07 seconds. (Beam Width: 10)
+inference_time: 379.34 seconds. (Beam Width: 1)
+duplicate: 205
+remaining reactions: 39801
+reaction_level accuracy: 0.3200
+training_token accuracy: 0.9580
+
+
+
+==================================
+#Experiment 1_03: USPTO50K MAPPED - HYPERPARAMETER: 
+==================================
+experiment_id: 03
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.0672
+val_pred: 84.32% (Beam Width: 1)
+inval_pred: 15.68% (Beam Width: 1)
+top1: 72.93% (Beam Width: 1)
+top1: xxx (Beam Width: 10)
+top3: xxx (Beam Width: 10)
+top5: xxx (Beam Width: 10)
+invalid_smiles: 15.68%
+training_time: 1834.46
+inference_time: xxx (Beam Width: 10)
+inference_time: 434.62 seconds. (Beam Width: 1)
+duplicate: 197
+remaining reactions: 39809
+reaction_level accuracy: 1.0000
+training_token accuracy: 0.9814
+
+==================================
+#Experiment 1_04: USPTO50K UNMAPPED
+==================================
+experiment_id: 04
+dataset: USPTO50K
+mapping: NO
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.1218
+val_pred: 87.79%  (Beam Width: 1)
+inval_pred: 12.21% (Beam Width: 1)
+top1: 53.31% (Beam Width: 1)
+top1: xxx (Beam Width: 10)
+top3: xxx (Beam Width: 10)
+top5: xxx (Beam Width: 10)
+invalid_smiles: 12.21%
+training_time: 1701.08 seconds.
+inference_time: xxx (Beam Width: 10)
+inference_time: 370.40 seconds. (Beam Width: 1)
+duplicate: 205
+remaining reactions: 39801
+reaction_level accuracy: 0.2400
+training_token accuracy: 0.9596
+
+
+
+==================================
+#Experiment 1_05: USPTO50K UNMAPPED * lr-3e-4
+==================================
+experiment_id: 05
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 3e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss:
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 1780.97 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 0.0000
+training_token accuracy: 0.9787
+
+
+
+==================================
+#Experiment 1_06: USPTO50K UNMAPPED * lr-3e-4
+==================================
+experiment_id: 06
+dataset: USPTO50K
+mapping: NO
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 3e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss:
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 1698.06 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 0.3600
+training_token accuracy: 0.9551
+
+
+
+==================================
+#Experiment 1_07: USPTO50K MAPPED
+==================================
+experiment_id: 07
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 1e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.2891
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 1633.07 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 0.1200
+training_token accuracy: 0.8997
+
+
+
+
+==================================
+#Experiment 1_08: USPTO50K UNMAPPED - not found
+==================================
+experiment_id: 08
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 1e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss:
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time:
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 
+training_token accuracy: 
+
+
+
+
+==================================
+#Experiment 1_09: USPTO50K MAPPED * ed_4_4
+==================================
+experiment_id: 09
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 4
+num_decoder_layers: 4
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.0623
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 2279.13 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 1.0000
+training_token accuracy: 0.9829
+
+
+
+
+==================================
+#Experiment 1_10: USPTO50K UNMAPPED
+==================================
+experiment_id: 10
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 3
+num_decoder_layers: 3
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 256
+learning_rate: 3e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.1000
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 2156.90 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 0.4000
+training_token accuracy: 0.9672
+
+
+
+==================================
+#Experiment 1_11: USPTO50K MAPPED
+==================================
+experiment_id: 11
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 6
+num_decoder_layers: 6
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 4.2920
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 3388.05 seconds.
+inference_time:
+duplicate: 
+remaining reactions: 
+reaction_level accuracy:  0.0000
+training_token accuracy: 0.1553
+
+
+
+
+==================================
+#Experiment 1_12: USPTO50K UNMAPPED
+==================================
+experiment_id: 12
+dataset: USPTO50K
+mapping: YES
+num_encoder_layers: 6
+num_decoder_layers: 6
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.0943
+val_pred: 91.45%
+top1: 58.80% (Beam Width: 1)
+top1: 
+top3: 
+top5: 
+invalid_smiles: 8.55%
+training_time: 3243.65 seconds.
+inference_time: 798.07 seconds.
+duplicate: 
+remaining reactions: 
+reaction_level accuracy: 0.4800
+training_token accuracy: 0.9691
+
+
+
+
+==================================
+#Experiment 1_13: USPTO-MIT UNMAPPED
+==================================
+experiment_id: 13
+dataset: USPTO MIT
+mapping: NO
+num_encoder_layers: 6
+num_decoder_layers: 6
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: 0.1126
+val_pred: 
+top1: 
+top3: 
+top5: 
+invalid_smiles: 
+training_time: 4023.98 seconds.
+inference_time:
+duplicate: 25659
+remaining reactions: 453374
+reaction_level accuracy: 0.4375
+training_token accuracy: 0.9636
+
+
+
+
+==================================
+#Experiment 1_14: USPTO-MIT MAPPED
+==================================
+experiment_id: 05
+dataset: USPTO MIT
+mapping: YES
+num_encoder_layers: 4
+num_decoder_layers:4
+num_heads: 8
+embedding_dim: 256
+ffn_dim: 512
+learning_rate: 5e-4
+batch_size: 32
+epochs: 20
+parameters: 
+train_loss: xx
+val_pred: xx
+top1: xx (Beam Width: 1)
+top1: 
+top3: 
+top5: 
+invalid_smiles: xx
+training_time:
+inference_time: xx
+duplicate: 25659
+remaining reactions: 453374
+reaction_level accuracy: 
+training_token accuracy: 
