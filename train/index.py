@@ -35,7 +35,7 @@ from mod.model import Seq2SeqTransformer
 # HYPERPARAMETERS
 # ============================================================
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
 EMB_DIM = 256
 HIDDEN_DIM = 512
@@ -48,20 +48,20 @@ LEARNING_RATE = 5e-4
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "uspto_mit_unmapped"
+DATASET_NAME = "ocrtrain"
 
 FILE_NAME = f"{DATASET_NAME}_ed_6-6"
 
 # Google Drive dataset
 FILE_PATH = (
     "/content/drive/MyDrive/Colab Notebooks/"
-    "uspto_mit_unmapped.csv"
+    "ocrtrain.csv"
 )
 
 HEADS = 8
 
-NUM_ENCODER_LAYERS = 4
-NUM_DECODER_LAYERS = 4
+NUM_ENCODER_LAYERS = 6
+NUM_DECODER_LAYERS = 6
 
 
 # ============================================================
