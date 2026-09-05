@@ -48,14 +48,14 @@ LEARNING_RATE = 5e-4
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "uspto_mit_mapped"
+DATASET_NAME = "uspto_mit_unmapped"
 
-FILE_NAME = f"{DATASET_NAME}_ed_4-4"
+FILE_NAME = f"{DATASET_NAME}_ed_6-6"
 
 # Google Drive dataset
 FILE_PATH = (
     "/content/drive/MyDrive/Colab Notebooks/"
-    "uspto_mit_mapped.csv"
+    "uspto_mit_unmapped.csv"
 )
 
 HEADS = 8

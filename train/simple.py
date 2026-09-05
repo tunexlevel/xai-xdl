@@ -47,13 +47,13 @@ PAD_TOKEN = "<pad>"
 
 DATASET_NAME = "uspto_mit_mapped"
 
-FILE_NAME = f"{DATASET_NAME}_ed_4-4"
+FILE_NAME = f"{DATASET_NAME}_ed_6-6"
 
-FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto_mit_mapped.csv"
+FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto_mit_unmapped.csv"
 
 HEADS = 8
-NUM_ENCODER_LAYERS = 4
-NUM_DECODER_LAYERS = 4
+NUM_ENCODER_LAYERS = 6
+NUM_DECODER_LAYERS = 6
 
 
 # ============================================================
