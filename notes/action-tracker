@@ -117,3 +117,4 @@ Next action:
 13. Display multiple results with confidence score
 
 
+We reduced the batch size at 16 epoch due to out of memory issue.

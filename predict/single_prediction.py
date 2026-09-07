@@ -33,12 +33,12 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-DATASET_NAME = "uspto_mit_unmapped"
+DATASET_NAME = "uspto_mit_unmapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
-
+IS_CHECKPOINT = False  # Set to True if loading from a checkpoint, False if loading a full model state dict
 
 
 # === Load vocab and model ===
@@ -78,7 +78,13 @@ model = Seq2SeqTransformer(
 
 
 try:
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    if IS_CHECKPOINT:
+        checkpoint = torch.load(MODEL_PATH, map_location=device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+    else:
+        # Load the full model state dict directly
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    
     model.eval()
     print("✅ Model loaded successfully.")
 except FileNotFoundError:
@@ -290,7 +296,7 @@ def main(file_name):
     checked = 0
     correct_percentage = 0
     
-    data_set = simple_ocr #upsto_unmapped_test 
+    data_set = simple_ocr  #simple_ocr #upsto_unmapped_test 
     
     if(file_name == 'uspto50k_unmapped'):
         data_set = simple_ocr #upsto_unmapped_test
@@ -302,7 +308,7 @@ def main(file_name):
     # Run the accuracy test on the provided data
     for reaction in data_set:
         reactants, products = reaction.split(",")
-        if(file_name == 'uspto50k_mapped'):
+        if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
             reactants = map_smiles(reactants)
             products = map_smiles(products)
         
@@ -312,7 +318,7 @@ def main(file_name):
         if correct:
             correct_count += 1
         
-        if(file_name == 'uspto50k_mapped'):
+        if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
             print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(beam_prediction)} | Target Product: {strip_atom_mapping(products)}")  
         else:
             print(f"Reactants: {reactants} | Correct: {correct} | Beam Product: {beam_prediction} | Target Product: {products}")  
@@ -329,9 +335,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    # main(DATASET_NAME)
-    token = 'CCNc1ccncc1[N+](=O)[O-].CS[CH2+]1SC(=C2Sc3ccccc3N2C)C(=O)N1Cc1ccccc1'
-    print(map_smiles(token))
+    main(DATASET_NAME)
     
     end_time = time.time()
     

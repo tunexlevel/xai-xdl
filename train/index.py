@@ -34,8 +34,7 @@ from mod.model import Seq2SeqTransformer
 # ============================================================
 # HYPERPARAMETERS
 # ============================================================
-
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 
 EMB_DIM = 256
 HIDDEN_DIM = 512
