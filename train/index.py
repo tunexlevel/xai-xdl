@@ -54,13 +54,15 @@ FILE_NAME = f"{DATASET_NAME}_ed_6-6"
 # Google Drive dataset
 FILE_PATH = (
     "/content/drive/MyDrive/Colab Notebooks/"
-    "ocrtrain.csv"
+    "uspto50k_unmapped.csv"
 )
 
 HEADS = 8
 
 NUM_ENCODER_LAYERS = 6
 NUM_DECODER_LAYERS = 6
+
+RETROSYNTHESIS = True  # Set to True for retrosynthesis, False for forward synthesis
 
 
 # ============================================================
@@ -309,7 +311,8 @@ print("=" * 70)
 dataset = ReactionDataset(
     df,
     token2idx,
-    max_len=MAX_LEN
+    max_len=MAX_LEN,
+    retrosynthesis=RETROSYNTHESIS
 )
 
 print(

@@ -3,10 +3,11 @@ from torch.utils.data import Dataset
 from helper.utils import tokenize_smiles
 
 class ReactionDataset(Dataset):
-    def __init__(self, df, token2idx, max_len=100):
+    def __init__(self, df, token2idx, max_len=100, retrosynthesis=False):
         self.df = df
         self.token2idx = token2idx
         self.max_len = max_len
+        self.retrosynthesis = retrosynthesis
 
     def __len__(self):
         return len(self.df)
@@ -21,6 +22,10 @@ class ReactionDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        src = self.encode(row['reactants'], add_special=False)
-        tgt = self.encode(row['products'], add_special=True)
+        if self.retrosynthesis:
+            src = self.encode(row['products'], add_special=False)
+            tgt = self.encode(row['reactants'], add_special=True)
+        else:
+            src = self.encode(row['reactants'], add_special=False)
+            tgt = self.encode(row['products'], add_special=True)
         return src, tgt

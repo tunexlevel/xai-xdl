@@ -255,6 +255,58 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     }
 
 
+def predict_reactants(product_smiles, max_len=120, target_smiles=None):
+    model.eval()
+
+    if not isinstance(product_smiles, str) or not product_smiles.strip():
+        return {
+            "reactants": "",
+            "data": {
+                "source_tokens": [],
+                "target_tokens": []
+            }
+        }
+
+    tokens = tokenize_smiles(product_smiles)
+
+    src_ids = [
+        token2idx.get(tok, token2idx["<unk>"])
+        for tok in tokens
+    ]
+
+    if not src_ids:
+        return {
+            "reactants": "",
+            "data": {
+                "source_tokens": [],
+                "target_tokens": []
+            }
+        }
+
+    src_tensor = torch.tensor(
+        src_ids,
+        dtype=torch.long,
+        device=device
+    ).unsqueeze(0)
+
+    with torch.no_grad():
+        beam_candidates = model.beam_search_candidates(
+            src_tensor,
+            sos_idx,
+            eos_idx,
+            beam_width=10,
+            max_len=max_len
+        )
+
+    return get_best_prediction(
+        beam_candidates,
+        idx2token,
+        sos_idx,
+        eos_idx,
+        pad_idx,
+        target_smiles
+    )
+
 def main(file_name):
     simple_ocr = [   
             'ClCc1cccc(CCl)n1.Sc1ccccc1,c3ccc(SCc2cccc(CSc1ccccc1)n2)cc3',

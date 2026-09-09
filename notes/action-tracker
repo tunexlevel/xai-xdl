@@ -102,11 +102,11 @@ I have some questions to ask on Expriment 1 (reactant->product) before I proceed
 
 
 Next action: 
-1. Record your results for uspto-50k.
-2. Use the best hyperparameter and train MIT for seperated (no reagent) and mixed (with reagent)
-3. Use the best hyperparameter and train OCR
-4. Perform testing
-5. Record results for mit and ocr
+1. Record your results for uspto-50k. => Done
+2. Use the best hyperparameter and train MIT for seperated (no reagent) => Done and mixed (with reagent) 
+3. Use the best hyperparameter and train OCR => Done
+4. Perform testing  => Partially
+5. Record results for mit and ocr => Partially
 6. Perform experiment for retrosynthesis with uspoto-50k
 7. Record results for retro-uspoto-50k
 8. Perform experiment for retrosynthesis with mit and ocr
