@@ -73,8 +73,16 @@ class Seq2SeqTransformer(nn.Module):
         )
 
         # Embed and add position info
-        src_emb = self.positional_encoding(self.embedding(src))
-        tgt_emb = self.positional_encoding(self.embedding(tgt))
+        # src_emb = self.positional_encoding(self.embedding(src))
+        # tgt_emb = self.positional_encoding(self.embedding(tgt))
+        
+        src_emb = self.positional_encoding(
+            self.embedding(src) * math.sqrt(self.emb_dim)
+        )
+
+        tgt_emb = self.positional_encoding(
+            self.embedding(tgt) * math.sqrt(self.emb_dim)
+        )
 
         # Transformer Pass
         outs = self.transformer(
@@ -94,7 +102,10 @@ class Seq2SeqTransformer(nn.Module):
         device = src.device
 
         # 1. Encode
-        src_emb = self.positional_encoding(self.embedding(src))
+        # src_emb = self.positional_encoding(self.embedding(src))
+        src_emb = self.positional_encoding(
+            self.embedding(src) * math.sqrt(self.emb_dim)
+        )
         src_padding_mask = src == self.pad_idx
         memory = self.transformer.encoder(
             src_emb, src_key_padding_mask=src_padding_mask
@@ -109,7 +120,10 @@ class Seq2SeqTransformer(nn.Module):
         for i in range(self.max_len - 1):
             tgt_mask = self.generate_square_subsequent_mask(ys.size(1)).to(device)
             tgt_padding_mask = ys == self.pad_idx
-            tgt_emb = self.positional_encoding(self.embedding(ys))
+            #tgt_emb = self.positional_encoding(self.embedding(ys))
+            tgt_emb = self.positional_encoding(
+                self.embedding(ys) * math.sqrt(self.emb_dim)
+            )
 
             # --- MANUAL DECODER PASS TO GRAB ATTENTION ---
             output = tgt_emb
@@ -161,7 +175,10 @@ class Seq2SeqTransformer(nn.Module):
     def beam_search_candidates(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
         device = src.device
         src_padding_mask = src == self.pad_idx
-        src_emb = self.positional_encoding(self.embedding(src))
+        # src_emb = self.positional_encoding(self.embedding(src))
+        src_emb = self.positional_encoding(
+                    self.embedding(src) * math.sqrt(self.emb_dim)
+                )
         memory = self.transformer.encoder(
             src_emb, src_key_padding_mask=src_padding_mask
         )
@@ -178,7 +195,10 @@ class Seq2SeqTransformer(nn.Module):
 
                 tgt_mask = self.generate_square_subsequent_mask(seq.size(0)).to(device)
                 tgt_padding_mask = seq == self.pad_idx
-                tgt_emb = self.positional_encoding(self.embedding(seq.unsqueeze(0)))
+                #tgt_emb = self.positional_encoding(self.embedding(seq.unsqueeze(0)))
+                tgt_emb = self.positional_encoding(
+                    self.embedding(seq.unsqueeze(0)) * math.sqrt(self.emb_dim)
+                )
 
                 out = self.transformer.decoder(
                     tgt_emb,
@@ -224,7 +244,10 @@ class Seq2SeqTransformer(nn.Module):
         device = src.device
 
         # Encode source
-        src_emb = self.positional_encoding(self.embedding(src))
+        # src_emb = self.positional_encoding(self.embedding(src))
+        src_emb = self.positional_encoding(
+                    self.embedding(src) * math.sqrt(self.emb_dim)
+                )
         src_padding_mask = src == self.pad_idx
 
         memory = self.transformer.encoder(
@@ -236,7 +259,10 @@ class Seq2SeqTransformer(nn.Module):
 
         for _ in range(max_len - 1):
 
-            tgt_emb = self.positional_encoding(self.embedding(ys))
+            # tgt_emb = self.positional_encoding(self.embedding(ys))
+            tgt_emb = self.positional_encoding(
+                self.embedding(ys) * math.sqrt(self.emb_dim)
+            )   
 
             tgt_mask = self.generate_square_subsequent_mask(ys.size(1)).to(device)
 

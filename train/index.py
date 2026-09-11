@@ -34,33 +34,30 @@ from mod.model import Seq2SeqTransformer
 # ============================================================
 # HYPERPARAMETERS
 # ============================================================
-BATCH_SIZE = 256
+BATCH_SIZE = 64
 
 EMB_DIM = 256
 HIDDEN_DIM = 512
 
-MAX_LEN = 120
+MAX_LEN = 160
 
-EPOCHS = 20
+EPOCHS = 500
 
-LEARNING_RATE = 5e-4
+LEARNING_RATE = 0.0006
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "ocrtrain"
+DATASET_NAME = "uspto50k_unmapped"
 
-FILE_NAME = f"{DATASET_NAME}_ed_6-6"
+FILE_NAME = f"{DATASET_NAME}_retro_3-3"
 
 # Google Drive dataset
-FILE_PATH = (
-    "/content/drive/MyDrive/Colab Notebooks/"
-    "uspto50k_unmapped.csv"
-)
+FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto50k_unmapped.csv"
 
 HEADS = 8
 
-NUM_ENCODER_LAYERS = 6
-NUM_DECODER_LAYERS = 6
+NUM_ENCODER_LAYERS = 3
+NUM_DECODER_LAYERS = 3
 
 RETROSYNTHESIS = True  # Set to True for retrosynthesis, False for forward synthesis
 

@@ -118,3 +118,5 @@ Next action:
 
 
 We reduced the batch size at 16 epoch due to out of memory issue.
+
+For your thesis/paper, I would report the 37.50% Beam-5 accuracy rather than the earlier 53.12%, and explicitly document that the evaluation pipeline was corrected to prevent target leakage.

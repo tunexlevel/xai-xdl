@@ -34,7 +34,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
 DATASET_NAME = "uspto50k_unmapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
-FILE_NAME = f"{DATASET_NAME}_retro_6-6" 
+FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
@@ -63,7 +63,7 @@ eos_idx = token2idx.get("<eos>", 2)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 N_HEADS = 8
-N_LAYERS = 6
+N_LAYERS = 3
 
 model = Seq2SeqTransformer(
     input_dim=len(token2idx),
@@ -115,7 +115,7 @@ def get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx,
         smiles = "".join(tokens)
 
         # Validate and canonicalize prediction
-        pred_canon = valid_smiles_or_empty(smiles)
+        pred_canon = smiles #valid_smiles_or_empty(smiles)
 
         # Skip invalid SMILES
         if not pred_canon:
@@ -214,7 +214,21 @@ def _canonical_smiles(smiles):
         return Chem.MolToSmiles(mol, canonical=True)
     except Exception:
         return s
+    
 
+
+def _canonicalize_reactants(smiles):
+    mols = []
+
+    for component in smiles.split("."):
+        mol = Chem.MolFromSmiles(component.strip())
+
+        if mol is None:
+            return None
+
+        mols.append(Chem.MolToSmiles(mol, canonical=True))
+
+    return ".".join(sorted(mols))
 
 def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     df = pd.read_csv(csv_path)
@@ -236,8 +250,8 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
             continue
 
         pred = predict_product(reactant)
-        pred_canon = _canonical_smiles(pred)
-        target_canon = _canonical_smiles(target)
+        pred_canon = _canonicalize_reactants(pred)
+        target_canon = _canonicalize_reactants(target)
 
         checked += 1
         if pred_canon == target_canon:
@@ -364,16 +378,17 @@ def main(file_name):
             reactants = map_smiles(reactants)
             products = map_smiles(products)
         
-        beam_prediction = predict_product(reactants, target_smiles=products)
+        # beam_prediction = predict_product(reactants, target_smiles=products)
+        beam_prediction = predict_reactants(products, target_smiles=reactants)
         correct = beam_prediction == products 
         checked += 1
         if correct:
             correct_count += 1
         
         if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
-            print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(beam_prediction)} | Target Product: {strip_atom_mapping(products)}")  
+            print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(beam_prediction)} | Target Reactants: {strip_atom_mapping(reactants)}")  
         else:
-            print(f"Reactants: {reactants} | Correct: {correct} | Beam Product: {beam_prediction} | Target Product: {products}")  
+            print(f"Product: {products} | Correct: {correct} | Beam Reactants: {beam_prediction} | Target Reactants: {reactants}")  
                    
         
     correct_percentage = correct_count/checked
