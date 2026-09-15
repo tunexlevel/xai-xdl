@@ -3,29 +3,46 @@ from torch.utils.data import Dataset
 from helper.utils import tokenize_smiles
 
 class ReactionDataset(Dataset):
-    def __init__(self, df, token2idx, max_len=100, retrosynthesis=False):
+    def __init__(self, df, token2idx, max_len=160, retrosynthesis=True):
         self.df = df
         self.token2idx = token2idx
         self.max_len = max_len
         self.retrosynthesis = retrosynthesis
 
+        self.sos_idx = self.token2idx['<sos>']
+        self.eos_idx = self.token2idx['<eos>']
+        self.pad_idx = self.token2idx['<pad>']
+        self.unk_idx = self.token2idx['<unk>']
+
     def __len__(self):
         return len(self.df)
 
-    def encode(self, smiles, add_special=True):
+    def encode_src(self, smiles):
         tokens = tokenize_smiles(smiles)
-        if add_special:
-            tokens = ['<sos>'] + tokens + ['<eos>']
-        ids = [self.token2idx.get(tok, self.token2idx['<unk>']) for tok in tokens]
-        padded = ids[:self.max_len] + [self.token2idx['<pad>']] * (self.max_len - len(ids))
-        return torch.tensor(padded[:self.max_len])
+        # Reserve 1 slot for <eos>
+        tokens = tokens[: self.max_len - 1]
+        tokens = tokens + ['<eos>']
+        
+        ids = [self.token2idx.get(tok, self.unk_idx) for tok in tokens]
+        padded = ids + [self.pad_idx] * (self.max_len - len(ids))
+        return torch.tensor(padded, dtype=torch.long)
+
+    def encode_tgt(self, smiles):
+        tokens = tokenize_smiles(smiles)
+        # Reserve 2 slots for <sos> and <eos>
+        tokens = tokens[: self.max_len - 2]
+        tokens = ['<sos>'] + tokens + ['<eos>']
+        
+        ids = [self.token2idx.get(tok, self.unk_idx) for tok in tokens]
+        padded = ids + [self.pad_idx] * (self.max_len - len(ids))
+        return torch.tensor(padded, dtype=torch.long)
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
         if self.retrosynthesis:
-            src = self.encode(row['products'], add_special=False)
-            tgt = self.encode(row['reactants'], add_special=True)
+            src = self.encode_src(row['products'])
+            tgt = self.encode_tgt(row['reactants'])
         else:
-            src = self.encode(row['reactants'], add_special=False)
-            tgt = self.encode(row['products'], add_special=True)
+            src = self.encode_src(row['reactants'])
+            tgt = self.encode_tgt(row['products'])
         return src, tgt

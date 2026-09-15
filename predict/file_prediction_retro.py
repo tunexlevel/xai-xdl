@@ -35,9 +35,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DATASET_NAME = "uspto50k_unmapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
-MODEL_PATH = ROOT / "pt" /"dump" /  f"{FILE_NAME}_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
+MODEL_PATH = ROOT / "pt" /"dump" /  f"{FILE_NAME}_1_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_token2idx2.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token2.json"
+IS_CHECKPOINT = True  # Set to True if loading from a checkpoint, False if loading a full model state dict
 
 
 
@@ -78,7 +79,11 @@ model = Seq2SeqTransformer(
 
 
 try:
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    if IS_CHECKPOINT:
+        checkpoint = torch.load(MODEL_PATH, map_location=device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+    else:
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
     print("✅ Model loaded successfully.")
 except FileNotFoundError:

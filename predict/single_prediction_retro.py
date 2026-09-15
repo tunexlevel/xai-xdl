@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 import warnings
 from mod.model import Seq2SeqTransformer
 from helper.utils import tokenize_smiles
-from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles, strip_atom_mapping
+from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles, strip_atom_mapping, _canonicalize_reactants
 from rdkit import Chem, RDLogger
 import pandas as pd
 
@@ -35,10 +35,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DATASET_NAME = "uspto50k_unmapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
-MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
-IS_CHECKPOINT = False  # Set to True if loading from a checkpoint, False if loading a full model state dict
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_1_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx2.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token2.json"
+IS_CHECKPOINT = True  # Set to True if loading from a checkpoint, False if loading a full model state dict
 
 
 # === Load vocab and model ===
@@ -217,19 +217,6 @@ def _canonical_smiles(smiles):
     
 
 
-def _canonicalize_reactants(smiles):
-    mols = []
-
-    for component in smiles.split("."):
-        mol = Chem.MolFromSmiles(component.strip())
-
-        if mol is None:
-            return None
-
-        mols.append(Chem.MolToSmiles(mol, canonical=True))
-
-    return ".".join(sorted(mols))
-
 def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     df = pd.read_csv(csv_path)
     if "reactants" not in df.columns or "products" not in df.columns:
@@ -325,7 +312,8 @@ def main(file_name):
     simple_ocr = [   
             'ClCc1cccc(CCl)n1.Sc1ccccc1,c3ccc(SCc2cccc(CSc1ccccc1)n2)cc3',
             'C.Cl,CCl','C=C.O,CCO','C=C,CC','CCO,CC=O','CC(=O)O.COC,CC(=O)OC',
-            'CC(=O)O.CCO,CC(=O)OCC','CCO,C=C','CC=O,CCO','CC(=O)C,CC(O)C','c1ccccc1.Cl,Clc1ccccc1','Nc1ccccc1.CC(=O)O,CC(=O)Nc1ccccc1',
+            'CC(=O)O.CCO,CC(=O)OCC','CCO,C=C','CC=O,CCO','CC(=O)C,CC(O)C','c1ccccc1.Cl,Clc1ccccc1',
+            'Nc1ccccc1.CC(=O)O,CC(=O)Nc1ccccc1',
         ]
     
     # USPTO-50k test set (unmapped)
@@ -362,10 +350,10 @@ def main(file_name):
     checked = 0
     correct_percentage = 0
     
-    data_set = simple_ocr  #simple_ocr #upsto_unmapped_test 
+    data_set = upsto_unmapped_test   #simple_ocr #upsto_unmapped_test 
     
     if(file_name == 'uspto50k_unmapped'):
-        data_set = simple_ocr #upsto_unmapped_test
+        data_set = upsto_unmapped_test #upsto_unmapped_test
         
     if(file_name == 'uspto50k_mapped'):
             data_set = simple_ocr #upsto_mapped_test
@@ -380,15 +368,15 @@ def main(file_name):
         
         # beam_prediction = predict_product(reactants, target_smiles=products)
         beam_prediction = predict_reactants(products, target_smiles=reactants)
-        correct = beam_prediction == products 
+        correct = _canonicalize_reactants(beam_prediction) == _canonicalize_reactants(reactants)
         checked += 1
         if correct:
             correct_count += 1
         
         if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
-            print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(beam_prediction)} | Target Reactants: {strip_atom_mapping(reactants)}")  
+            print(f"Reactants: {strip_atom_mapping(reactants)} | Correct: {correct} | Beam Product: {strip_atom_mapping(_canonicalize_reactants(beam_prediction))} | Target Reactants: {strip_atom_mapping(_canonicalize_reactants(reactants))}")  
         else:
-            print(f"Product: {products} | Correct: {correct} | Beam Reactants: {beam_prediction} | Target Reactants: {reactants}")  
+            print(f"Product: {products} | Correct: {correct} | Beam Reactants: {_canonicalize_reactants(beam_prediction)} | Target Reactants: {_canonicalize_reactants(reactants)}")  
                    
         
     correct_percentage = correct_count/checked

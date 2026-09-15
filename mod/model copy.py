@@ -41,11 +41,10 @@ class Seq2SeqTransformer(nn.Module):
 
         self.fc_out = nn.Linear(emb_dim, output_dim)
 
-    def generate_square_subsequent_mask(self, sz, device=None):
+    def generate_square_subsequent_mask(self, sz):
         # mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
         # mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        # mask = torch.triu(torch.ones(sz, sz), diagonal=1).bool()
-        mask = nn.Transformer.generate_square_subsequent_mask(sz, device=device)
+        mask = torch.triu(torch.ones(sz, sz), diagonal=1).bool()
         return mask
 
     def create_mask(self, src, tgt):
@@ -131,20 +130,19 @@ class Seq2SeqTransformer(nn.Module):
             last_layer_attn = None
 
             for layer in self.transformer.decoder.layers:
-                residual = output
-                output, _ = layer.self_attn(
+                output = layer.self_attn(
                     output,
                     output,
                     output,
                     attn_mask=tgt_mask,
                     key_padding_mask=tgt_padding_mask,
-                )
+                )[0]
                 output = layer.dropout1(output)
-                output = layer.norm1(output + residual)   # <-- Fixed: add immediate input
+                output = layer.norm1(output + tgt_emb)
 
-                residual = output
+                query = output
                 output, attn_weights = layer.multihead_attn(
-                    output,
+                    query,
                     memory,
                     memory,
                     key_padding_mask=src_padding_mask,
@@ -153,14 +151,13 @@ class Seq2SeqTransformer(nn.Module):
                 last_layer_attn = attn_weights
 
                 output = layer.dropout2(output)
-                output = layer.norm2(output + residual)   # <-- Fixed: add immediate input
+                output = layer.norm2(output + query)
 
-                residual = output
                 ff_output = layer.linear2(
                     layer.dropout(layer.activation(layer.linear1(output)))
                 )
-                output = layer.norm3(residual + layer.dropout3(ff_output) if hasattr(layer, 'dropout3') else residual + ff_output)
-            
+                output = layer.norm3(output + ff_output)
+
             all_attention_weights.append(last_layer_attn)
             prob = self.fc_out(output[:, -1])
             _, next_word = torch.max(prob, dim=1)

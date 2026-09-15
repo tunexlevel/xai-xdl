@@ -4,6 +4,8 @@ import json
 import time
 from pathlib import Path
 
+
+
 # ============================================================
 # PROJECT ROOT
 # ============================================================
@@ -29,7 +31,7 @@ from helper.data_loader import load_uspto_file
 from helper.utils import build_vocab
 from helper.dataset import ReactionDataset
 from mod.model import Seq2SeqTransformer
-
+from helper.rsmile_dataframe import prepare_rsmiles_dataframe
 
 # ============================================================
 # HYPERPARAMETERS
@@ -47,12 +49,12 @@ LEARNING_RATE = 0.0006
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "uspto50k_unmapped"
+DATASET_NAME = "uspto50k_mapped"
 
 FILE_NAME = f"{DATASET_NAME}_retro_3-3"
 
 # Google Drive dataset
-FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto50k_unmapped.csv"
+FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto50k_mapped.csv"
 
 HEADS = 8
 
@@ -176,14 +178,16 @@ print("=" * 70)
 
 print(f"Dataset: {FILE_PATH}")
 
-df = load_uspto_file(FILE_PATH)
+raw_df = load_uspto_file(FILE_PATH)
+
+aligned_df = prepare_rsmiles_dataframe(raw_df, augment_times=1)
 
 print(
-    f"Number of reactions loaded: {len(df):,}"
+    f"Number of reactions loaded: {len(aligned_df):,}"
 )
 
 print(
-    f"Columns: {list(df.columns)}"
+    f"Columns: {list(aligned_df.columns)}"
 )
 
 
@@ -198,7 +202,7 @@ required_columns = [
 
 for column in required_columns:
 
-    if column not in df.columns:
+    if column not in aligned_df.columns:
 
         raise ValueError(
             f"Required column '{column}' "
@@ -208,12 +212,12 @@ for column in required_columns:
 
 print(
     f"Reactant examples: "
-    f"{df['reactants'].head(2).tolist()}"
+    f"{aligned_df['reactants'].head(2).tolist()}"
 )
 
 print(
     f"Product examples: "
-    f"{df['products'].head(2).tolist()}"
+    f"{aligned_df['products'].head(2).tolist()}"
 )
 
 
@@ -227,9 +231,9 @@ print("BUILDING VOCABULARY")
 print("=" * 70)
 
 all_smiles = (
-    df["reactants"].tolist()
+    aligned_df["reactants"].tolist()
     +
-    df["products"].tolist()
+    aligned_df["products"].tolist()
 )
 
 token2idx, idx2token = build_vocab(
@@ -306,7 +310,7 @@ print("CREATING DATASET")
 print("=" * 70)
 
 dataset = ReactionDataset(
-    df,
+    aligned_df,
     token2idx,
     max_len=MAX_LEN,
     retrosynthesis=RETROSYNTHESIS
