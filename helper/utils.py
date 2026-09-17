@@ -235,3 +235,5 @@ def get_root_aligned_pair(product_mapped_smi: str, reactant_mapped_smi: str, aug
     reac_final = strip_regex.sub('', reac_rooted)
 
     return prod_final, reac_final
+
+

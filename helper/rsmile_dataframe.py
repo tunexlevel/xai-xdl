@@ -27,3 +27,6 @@ def prepare_rsmiles_dataframe(df_mapped: pd.DataFrame, augment_times: int = 1) -
                 records.append({'products': p_aug, 'reactants': r_aug})
                 
     return pd.DataFrame(records)
+
+
+

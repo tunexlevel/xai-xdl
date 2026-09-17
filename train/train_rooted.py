@@ -24,11 +24,11 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 
 # Hyperparameters
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 EMB_DIM = 256
 HIDDEN_DIM = 512
 MAX_LEN = 160
-EPOCHS = 500
+EPOCHS = 20
 LEARNING_RATE = 0.0007 #6 best
 PAD_TOKEN = "<pad>"
 DATASET_NAME = "uspto50k_mapped"
@@ -65,7 +65,7 @@ with open(ROOT / "tokens" / f"{FILE_NAME}_idx2token.json", "w") as f:
     json.dump(idx2token, f)
     
 
-small_df = aligned_df.iloc[:1].copy()
+small_df = aligned_df.iloc[:1000].copy()
 
 
 # Dataset & DataLoader
@@ -100,20 +100,15 @@ optimizer = Adam(
 # -----------------------------
 # For a full dataset, the paper used 8,000 warmup steps.
 # For small/toy datasets, pick a smaller number (e.g., 50-200 steps).
-WARMUP_STEPS = 10 
+WARMUP_STEPS = 100 
 
 def lr_lambda(current_step: int):
-    # Avoid zero division on the very first step
-    if current_step < WARMUP_STEPS:
-        # Linear ramp: 0 -> 1.0 over WARMUP_STEPS
-        return float(current_step) / float(max(1, WARMUP_STEPS))
-    
-    # Inverse square-root decay (standard Vaswani / Attention Is All You Need decay)
-    return max(0.0, (WARMUP_STEPS ** 0.5) * (current_step ** -0.5))
+    step = max(1, current_step)
+    # Warmup phase: scales linearly from 0 to 1.0
+    # Decay phase: scales down as 1 / sqrt(step)
+    return min(step ** -0.5, step * (WARMUP_STEPS ** -1.5)) * (WARMUP_STEPS ** 0.5)
 
 scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
-
-optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 start_time = time.time()
 
@@ -175,7 +170,7 @@ for epoch in range(EPOCHS):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
         optimizer.step()
-        # scheduler.step()  # <--- Step per batch to advance warmup/decay
+        scheduler.step()  # <--- Step per batch to advance warmup/decay
         
         current_lr = scheduler.get_last_lr()[0]
         total_loss += loss.item()

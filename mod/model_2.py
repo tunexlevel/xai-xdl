@@ -45,11 +45,7 @@ class Seq2SeqTransformer(nn.Module):
         # mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
         # mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         # mask = torch.triu(torch.ones(sz, sz), diagonal=1).bool()
-        # mask = nn.Transformer.generate_square_subsequent_mask(sz, device=device)
-        mask = torch.triu(
-                torch.ones((sz, sz), dtype=torch.bool, device=device),
-                diagonal=1
-            )
+        mask = nn.Transformer.generate_square_subsequent_mask(sz, device=device)
         return mask
 
     def create_mask(self, src, tgt):

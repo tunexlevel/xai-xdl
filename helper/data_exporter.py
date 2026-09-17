@@ -116,8 +116,8 @@ def process_ocr_file(input_path, output_path, max_samples=None, type=None, remov
 
     else:
         # Clean SMILES without removing atom mapping
-        df['reactants'] = df['reactants'].apply(clean_smiles)
-        df['products'] = df['products'].apply(clean_smiles)
+        df['reactants'] = df['reactants'].apply(map_smiles)
+        df['products'] = df['products'].apply(map_smiles)
     
     # Drop rows with None values after mapping removal
     df = df.dropna(subset=['reactants', 'products'])
@@ -244,9 +244,9 @@ def main(run_type="all"):
 
     if run_type in ["all", "ocr"]:
         # OCR processing
-        source_file = "data/raw/ocr/ocr_train.csv"
-        target_file = "data/ocr/processed_train.csv"
-        process_ocr_file(source_file, target_file, type="ocr", remove_mapping=True)
+        source_file = "data/raw/ocr/ocrtrain_multi_reactant.csv"
+        target_file = "data/raw/ocr/ocrtrain_multi_reactant_processed.csv"
+        process_ocr_file(source_file, target_file, type="ocr", remove_mapping=False)
         
         
     if run_type in ["all", "uspto_mit_unmapped"]:
@@ -272,4 +272,4 @@ if __name__ == "__main__":
     # Change run_type as needed: 
     # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
     # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
-    main(run_type="uspto_mit_mapped")
+    main(run_type="ocr")

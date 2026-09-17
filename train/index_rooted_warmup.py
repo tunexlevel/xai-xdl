@@ -45,13 +45,13 @@ HIDDEN_DIM = 512
 
 MAX_LEN = 160
 
-EPOCHS = 20
+EPOCHS = 200
 
 LEARNING_RATE = 0.0006
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "uspto50k_mapped"
+DATASET_NAME = "uspto50k_mapped_warmup"
 
 FILE_NAME = f"{DATASET_NAME}_retro_3-3"
 

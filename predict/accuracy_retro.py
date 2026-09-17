@@ -14,6 +14,7 @@ import warnings
 from mod.model import Seq2SeqTransformer
 
 from helper.utils import (
+    get_root_aligned_pair,
     tokenize_smiles,
     decode_indices,
     valid_smiles_or_empty,
@@ -48,11 +49,11 @@ device = torch.device(
 )
 
 
-DATASET_NAME = "uspto50k_unmapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
+DATASET_NAME = "uspto50k_mapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_1_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx2.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token2.json"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_1_token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_1_idx2token.json"
 IS_CHECKPOINT = True 
 
 # ============================================================
@@ -196,7 +197,7 @@ def _canonical_smiles(smiles):
 def predict_top_k(
     reactant_smiles,
     k=5,
-    max_len=120,
+    max_len=160,
     beam_width=10
 ):
     """
@@ -438,6 +439,8 @@ def test_prediction_accuracy(
             continue
 
         checked += 1
+        
+        products, target = get_root_aligned_pair(products, target)
 
         # ----------------------------------------------------
         # Target canonical SMILES
@@ -445,7 +448,7 @@ def test_prediction_accuracy(
 
         target_canon = _canonical_smiles(
             target
-        )
+        ) 
 
         # ----------------------------------------------------
         # Predict Top 5
@@ -459,7 +462,7 @@ def test_prediction_accuracy(
 
                 k=5,
 
-                max_len=120,
+                max_len=160,
 
                 beam_width=10
 

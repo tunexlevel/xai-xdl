@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
     
 import warnings
 from mod.model import Seq2SeqTransformer
-from helper.utils import tokenize_smiles
+from helper.utils import get_root_aligned_pair, tokenize_smiles
 from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles, strip_atom_mapping, _canonicalize_reactants
 from rdkit import Chem, RDLogger
 import pandas as pd
@@ -373,7 +373,11 @@ def main(file_name):
     
     # Run the accuracy test on the provided data
     for reaction in data_set:
-        products,reactants  = reaction.split(",")
+        reactants, products = reaction.split(",")
+        reactants, products = get_root_aligned_pair(reactants, products)
+        
+        # print(f"Reactants: {reactants} | Products: {products}")
+        
         if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
             reactants = (reactants)
             products = (products)
@@ -386,7 +390,7 @@ def main(file_name):
             correct_count += 1
         
         if(file_name == 'uspto50k_mapped' or file_name == 'uspto_mit_mapped'):
-            print(f"Product: {products} | Correct: {correct} | Beam Product: {beam_prediction} | Target Reactants: {reactants}")  
+            print(f"Product: {_canonicalize_reactants(products)} | Correct: {correct} | Beam Product: {_canonicalize_reactants(beam_prediction)} | Target Reactants: {_canonicalize_reactants(reactants)}")  
         else:
             print(f"Product: {products} | Correct: {correct} | Beam Reactants: {_canonicalize_reactants(beam_prediction)} | Target Reactants: {_canonicalize_reactants(reactants)}")  
                    

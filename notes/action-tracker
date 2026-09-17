@@ -120,3 +120,14 @@ Next action:
 We reduced the batch size at 16 epoch due to out of memory issue.
 
 For your thesis/paper, I would report the 37.50% Beam-5 accuracy rather than the earlier 53.12%, and explicitly document that the evaluation pipeline was corrected to prevent target leakage.
+
+-Implementing Rooted SMILES improved retrosysnthesis accuracy
+-Implement warmups on the USPTO 50k mapped data
+-Remove duplicate for OCR dataset - done
+-Remove reactions with one reactant - done
+-Implement atom mapping for dedup OCR - done
+-Use the dedup OCR, R-SMILES and Warmups (If it shows improvement)
+    -For Retrosynthesis
+    -For Forward Prediction
+
+    Target 200 Epochs
