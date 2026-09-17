@@ -131,3 +131,13 @@ For your thesis/paper, I would report the 37.50% Beam-5 accuracy rather than the
     -For Forward Prediction
 
     Target 200 Epochs
+
+
+
+Epoch 1499 completed. Loss: 0.0571 | Token Accuracy: 0.9655 | Reaction Accuracy: 0.0000
+Training completed in 143.77 seconds.
+Epoch 1500/1500: 100%|█████████████████████████| 1/1 [00:00<00:00, 14.56it/s, loss=0.0506, lr=0.000000]
+
+Epoch 1500 completed. Loss: 0.0506 | Token Accuracy: 0.9770 | Reaction Accuracy: 0.0000
+Training completed in 143.87 seconds.
+(venv) (base) user@Babatunde-Opesemowo-5 xai-xdl % 

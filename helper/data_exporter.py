@@ -15,6 +15,19 @@ def load_uspto_file(path, max_samples=None, type=None):
                 df.columns = ['reactants', 'products']
             else:
                 raise ValueError(f"Expected columns 'reactants' and 'products' not found in {path}")
+        elif type == "condition":
+
+            if len(df.columns) >= 3:
+                df.columns = ['source','canonical_rxn','catalyst1','solvent1','solvent2','reagent1','reagent2','dataset']
+                
+                split_smiles = df['canonical_rxn'].str.split(">", expand=True)
+                
+                if split_smiles.shape[1] >= 3:
+                    df['reactants'] = split_smiles[0].str.strip()
+                    df['products'] = split_smiles[2].str.strip()  # skip reagents
+                else:
+                    raise ValueError(f"Unexpected reaction column format in {path}")
+        
         elif type == "mit":
             if len(df.columns) >= 1:
                     df.columns = ['reactions']
@@ -86,8 +99,8 @@ def process_uspto_file(input_path, output_path, max_samples=None, type=None, rem
     else:
         # Clean SMILES while adding atom mapping safely
         # map_smiles should return None on failure rather than crashing
-        df['reactants'] = df['reactants'].apply(clean_smiles).apply(map_smiles)
-        df['products'] = df['products'].apply(clean_smiles).apply(map_smiles)
+        df['reactants'] = df['reactants'].apply(map_smiles)
+        df['products'] = df['products'].apply(map_smiles)
             
     # Drop rows that failed parsing/mapping
     initial_count = len(df)
@@ -102,6 +115,24 @@ def process_uspto_file(input_path, output_path, max_samples=None, type=None, rem
         print(f"Processed data saved to {output_path}")
     except Exception as e:
         print(f"Error saving processed data to {output_path}: {e}")
+
+def process_condition_file(input_path, output_path, max_samples=None, type=None, remove_mapping=True):
+    df = load_uspto_file(input_path, max_samples, type)
+    if df is None:
+        print("No data to process.")
+        return
+    
+    if not remove_mapping:
+        df['reactants'] = df['reactants'].apply(map_smiles)
+        df['products'] = df['products'].apply(map_smiles)
+            
+    # Save the processed DataFrame to a new CSV file
+    try:
+        df.to_csv(output_path, index=False)
+        print(f"Processed data saved to {output_path}")
+    except Exception as e:
+        print(f"Error saving processed data to {output_path}: {e}")
+
 
 def process_ocr_file(input_path, output_path, max_samples=None, type=None, remove_mapping=True):
     df = load_uspto_file(input_path, max_samples, type)
@@ -214,9 +245,9 @@ def main(run_type="all"):
     
     if run_type in ["all", "uspto_mapped"]:
         # USPTO50k Mapped processing
-        source_file = "data/raw/uspto50k/raw_train.csv"
-        target_file = "data/uspto50k_mapped.csv"
-        process_uspto_file(source_file, target_file, type="uspto", remove_mapping=False)
+        source_file = "data/raw/final/reactant_product_multi_reactant.csv"
+        target_file = "data/raw/final/reactant_product_multi_reactant_mapped.csv"
+        process_uspto_file(source_file, target_file, type="ocr", remove_mapping=False)
 
     if run_type in ["all", "uspto_unmapped"]:
         # USPTO50k Unmapped processing
@@ -242,6 +273,14 @@ def main(run_type="all"):
         target_file = "data/chemxai/processed_train.csv"
         process_chemxai_file(source_file, target_file, type="chemxai")
 
+
+    if run_type in ["all", "condition"]:
+            # ChemXAI processing
+            source_file = "data/raw/uspto_condition/USPTO_Condition.csv"
+            target_file = "data/raw/uspto_condition/USPTO_Condition_processed.csv"
+            process_condition_file(source_file, target_file, type="condition", remove_mapping=True)
+            
+            
     if run_type in ["all", "ocr"]:
         # OCR processing
         source_file = "data/raw/ocr/ocrtrain_multi_reactant.csv"
@@ -272,4 +311,4 @@ if __name__ == "__main__":
     # Change run_type as needed: 
     # "all", "uspto_unmapped", "uspto_mapped", "chemxai",
     # "ocr", "uspto_test_mapped", "uspto_test_unmapped"
-    main(run_type="ocr")
+    main(run_type="uspto_mapped")

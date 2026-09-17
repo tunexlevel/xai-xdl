@@ -1,0 +1,12 @@
+
+Q1
+====
+I implemented a rooted_aligned_pair base on a paper I read which improved
+the token accuracy and reaction accuracy of the model while training. However,
+on testing it for prediction I found that the model was not able to predict the correct reactants for a given product.
+
+Kindly check the code below and let me know if there is any issue with the implementation. Or is the way I predict is wrong using my existing achitecture. 
+
+
+Q2
+====

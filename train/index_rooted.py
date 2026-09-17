@@ -43,18 +43,18 @@ HIDDEN_DIM = 512
 
 MAX_LEN = 160
 
-EPOCHS = 200
+EPOCHS = 5
 
 LEARNING_RATE = 0.0006
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "uspto50k_mapped"
+DATASET_NAME = "reactant_product_multi_reactant_mapped"
 
-FILE_NAME = f"{DATASET_NAME}_retro_3-3"
+FILE_NAME = f"{DATASET_NAME}_retro" 
 
 # Google Drive dataset
-FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto50k_mapped.csv"
+FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/reactant_product_multi_reactant_mapped.csv"
 
 HEADS = 8
 

@@ -51,7 +51,7 @@ device = torch.device(
 
 DATASET_NAME = "uspto50k_mapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
-MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_1_reaction_model.pt"
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_2_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_1_token2idx.json"
 IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_1_idx2token.json"
 IS_CHECKPOINT = True 

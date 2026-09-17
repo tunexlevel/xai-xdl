@@ -74,9 +74,9 @@ if __name__ == "__main__":
     print('' + '=' * len(start_message))
     
     parser = argparse.ArgumentParser(description="Remove duplicate reactions from a CSV file.")
-    parser.add_argument("input_path", nargs="?", default="data/raw/ocr/ocrtrain.csv")
-    parser.add_argument("-o", "--output", dest="output_path", default="data/raw/ocr/ocrtrain_deduplicated.csv")
-    parser.add_argument("--samples", dest="sample_output_path", default="data/raw/ocr/ocrtrain_duplicate_samples.csv")
+    parser.add_argument("input_path", nargs="?", default="data/raw/final/reactant_product.csv")
+    parser.add_argument("-o", "--output", dest="output_path", default="data/raw/final/reactant_product_deduplicated.csv")
+    parser.add_argument("--samples", dest="sample_output_path", default="data/raw/final/reactant_product_duplicate_samples.csv")
     args = parser.parse_args()
 
     start_time = time.time()

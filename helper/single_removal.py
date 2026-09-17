@@ -161,20 +161,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "input_path",
         nargs="?",
-        default="data/raw/ocr/ocrtrain_deduplicated.csv"
+        default="data/raw/final/reactant_product_deduplicated.csv"
     )
 
     parser.add_argument(
         "-o",
         "--output",
         dest="output_path",
-        default="data/raw/ocr/ocrtrain_multi_reactant.csv"
+        default="data/raw/final/reactant_product_multi_reactant.csv"
     )
 
     parser.add_argument(
         "--samples",
         dest="sample_output_path",
-        default="data/raw/ocr/ocrtrain_single_reactant_samples.csv"
+        default="data/raw/final/reactant_product_single_reactant_samples.csv"
     )
 
     parser.add_argument(
