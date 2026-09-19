@@ -141,3 +141,6 @@ Epoch 1500/1500: 100%|███████████████████�
 Epoch 1500 completed. Loss: 0.0506 | Token Accuracy: 0.9770 | Reaction Accuracy: 0.0000
 Training completed in 143.87 seconds.
 (venv) (base) user@Babatunde-Opesemowo-5 xai-xdl % 
+
+
+I faced a challenged where the forward prediction was no longer. For several hours I couldn't solve the problem, until i discovered that the problem was the model where I changed the embedding function under the generated method. Lesson is that prediction is also affected by the model setup too not just the parameters, checkpoints or tokens vocabulary.

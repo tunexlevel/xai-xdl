@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from predict.predict import predict_product
+from predict.api_prediction import predict_product
 
 try:
     from predict.predict import predict_reactants
@@ -11,12 +11,17 @@ app = Flask(__name__)
 MAX_PREDICTIONS = 5
 
 
-def _call_predictor(predictor, value, top_k):
-    """Support predictors with either one or two parameters."""
+def _call_predictor(predictor, value, top_k, model_name=None):
+    kwargs = {"top_k": top_k}
+
+    if model_name:
+        kwargs["file_name"] = model_name
+
     try:
-        return predictor(value, top_k=top_k)
+        return predictor(value, **kwargs)
     except TypeError:
-        return predictor(value)
+        kwargs.pop("file_name", None)
+        return predictor(value, **kwargs)
 
 
 def _normalise_predictions(raw_predictions, top_k):
@@ -43,9 +48,14 @@ def _normalise_predictions(raw_predictions, top_k):
             )
             weight = item.get("weight", item.get("score", item.get("probability")))
             confidence = item.get("confidence")
+            attention_weights = item.get(
+                "attention_weights",
+                item.get("attention"),
+            )
 
         elif isinstance(item, (list, tuple)) and len(item) >= 2:
             prediction, weight = item[0], item[1]
+            attention_weights = item[2] if len(item) >= 3 else None
 
         if prediction is None:
             continue
@@ -64,6 +74,7 @@ def _normalise_predictions(raw_predictions, top_k):
             "prediction": str(prediction),
             "weight": weight,
             "confidence": confidence,
+            "attention_weights": attention_weights,
         })
 
     if not results:
@@ -71,29 +82,33 @@ def _normalise_predictions(raw_predictions, top_k):
 
     # Use uniform weights when the model does not return scores.
     supplied_weights = [r["weight"] for r in results]
-    if all(weight is None for weight in supplied_weights):
-        weights = [1.0 / len(results)] * len(results)
-    else:
-        weights = [
-            max(0.0, weight if weight is not None else 0.0)
-            for weight in supplied_weights
+    scalar_weights = [
+        value for value in supplied_weights
+        if isinstance(value, (int, float))
+    ]
+
+    if scalar_weights:
+        total = sum(max(0.0, float(value)) for value in scalar_weights)
+        normalised_weights = [
+            round(max(0.0, float(value)) / total, 6)
+            if isinstance(value, (int, float)) and total > 0
+            else None
+            for value in supplied_weights
         ]
-        total = sum(weights)
-        weights = (
-            [weight / total for weight in weights]
-            if total > 0
-            else [1.0 / len(results)] * len(results)
-        )
+    else:
+        normalised_weights = [None] * len(results)
 
-    for result, weight in zip(results, weights):
-        result["weight"] = round(weight, 6)
+    for result, normalised_weight in zip(results, normalised_weights):
+        if normalised_weight is not None:
+            result["weight"] = normalised_weight
 
-        # This is a ranking confidence unless the model supplied calibration.
         if result["confidence"] is None:
-            result["confidence"] = round(weight, 6)
-        else:
+            result["confidence"] = normalised_weight
+
+        if result["confidence"] is not None:
             result["confidence"] = round(
-                max(0.0, min(1.0, result["confidence"])), 6
+                max(0.0, min(1.0, float(result["confidence"]))),
+                6,
             )
 
     return results[:top_k]
@@ -117,6 +132,16 @@ def _json_input(field_name):
         }), 400
 
     return value.strip(), None, None
+
+
+def _get_model_name():
+    data = request.get_json(silent=True) or {}
+    return (
+        request.args.get("model")
+        or request.args.get("file_name")
+        or data.get("model")
+        or data.get("file_name")
+    )
 
 
 @app.get("/")
@@ -151,6 +176,7 @@ def forward_prediction():
         predict_product,
         reactant_smiles,
         top_k,
+        _get_model_name(),
     )
 
     return jsonify({
@@ -180,6 +206,7 @@ def retrosynthesis_prediction():
         predict_reactants,
         product_smiles,
         top_k,
+        _get_model_name(),
     )
 
     return jsonify({

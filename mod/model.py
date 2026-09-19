@@ -158,7 +158,7 @@ class Seq2SeqTransformer(nn.Module):
         )
         return ys, combined_attn
 
-    def beam_search_candidates(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
+    def beam_search_candidatesx(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
         device = src.device
         src_padding_mask = src == self.pad_idx
         src_emb = self.positional_encoding(self.embedding(src))
@@ -261,7 +261,160 @@ class Seq2SeqTransformer(nn.Module):
 
         # ============================================================
     
-
+    def _get_sequence_attention(self, memory, src_padding_mask, sequence):
+            """Return averaged decoder cross-attention: (target_len, source_len)."""
+            device = sequence.device
+    
+            tgt = sequence.unsqueeze(0)
+            tgt_emb = self.positional_encoding(self.embedding(tgt))
+            tgt_mask = self.generate_square_subsequent_mask(tgt.size(1)).to(device)
+            tgt_padding_mask = tgt == self.pad_idx
+    
+            output = tgt_emb
+            last_attention = None
+    
+            for layer in self.transformer.decoder.layers:
+                self_attn_output = layer.self_attn(
+                    output,
+                    output,
+                    output,
+                    attn_mask=tgt_mask,
+                    key_padding_mask=tgt_padding_mask,
+                    need_weights=False,
+                )[0]
+                output = layer.norm1(output + layer.dropout1(self_attn_output))
+    
+                cross_attn_output, attention = layer.multihead_attn(
+                    output,
+                    memory,
+                    memory,
+                    key_padding_mask=src_padding_mask,
+                    need_weights=True,
+                    average_attn_weights=True,
+                )
+                output = layer.norm2(
+                    output + layer.dropout2(cross_attn_output)
+                )
+                last_attention = attention
+    
+                ff_output = layer.linear2(
+                    layer.dropout(layer.activation(layer.linear1(output)))
+                )
+                output = layer.norm3(output + layer.dropout3(ff_output))
+    
+            if last_attention is None:
+                return None
+    
+            # Remove batch dimension: (target_len, source_len).
+            return last_attention[0].detach().cpu().float().tolist()
+    
+    def beam_search_candidates(
+            self,
+            src,
+            sos_idx,
+            eos_idx,
+            beam_width=8,
+            max_len=120,
+            return_attention=False,
+        ):
+            device = src.device
+            src_padding_mask = src == self.pad_idx
+            src_emb = self.positional_encoding(self.embedding(src))
+            memory = self.transformer.encoder(
+                src_emb,
+                src_key_padding_mask=src_padding_mask,
+            )
+    
+            beams = [(torch.tensor([sos_idx], device=device), 0.0)]
+            finished = []
+    
+            for _ in range(max_len - 1):
+                candidates = []
+    
+                for seq, score in beams:
+                    if seq[-1].item() == eos_idx and seq.numel() > 1:
+                        finished.append((seq, score))
+                        continue
+    
+                    tgt_mask = self.generate_square_subsequent_mask(
+                        seq.size(0)
+                    ).to(device)
+                    tgt_padding_mask = seq == self.pad_idx
+                    tgt_emb = self.positional_encoding(
+                        self.embedding(seq.unsqueeze(0))
+                    )
+    
+                    out = self.transformer.decoder(
+                        tgt_emb,
+                        memory,
+                        tgt_mask=tgt_mask,
+                        tgt_key_padding_mask=tgt_padding_mask.unsqueeze(0),
+                        memory_key_padding_mask=src_padding_mask,
+                    )
+    
+                    logits = self.fc_out(out[:, -1])
+                    log_probs = torch.log_softmax(logits, dim=-1)[0]
+                    topk = torch.topk(
+                        log_probs,
+                        k=min(beam_width, log_probs.numel()),
+                    )
+    
+                    for next_idx, next_logp in zip(
+                        topk.indices.tolist(),
+                        topk.values.tolist(),
+                    ):
+                        if next_idx == self.pad_idx:
+                            continue
+    
+                        new_seq = torch.cat(
+                            [
+                                seq,
+                                torch.tensor([next_idx], device=device),
+                            ]
+                        )
+                        candidates.append(
+                            (new_seq, score + float(next_logp))
+                        )
+    
+                if not candidates:
+                    break
+    
+                unique = {}
+                for seq, score in candidates:
+                    key = tuple(seq.detach().cpu().tolist())
+                    if key not in unique or score > unique[key][1]:
+                        unique[key] = (seq, score)
+    
+                beams = sorted(
+                    unique.values(),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )[:beam_width]
+    
+                if len(finished) >= beam_width:
+                    break
+    
+            all_results = finished + beams
+            all_results = sorted(
+                all_results,
+                key=lambda item: item[1],
+                reverse=True,
+            )[:beam_width]
+    
+            if not return_attention:
+                return all_results
+    
+            results = []
+            for sequence, score in all_results:
+                attention = self._get_sequence_attention(
+                    memory,
+                    src_padding_mask,
+                    sequence,
+                )
+                results.append((sequence, score, attention))
+    
+            return results
+    
 
 
 
@@ -284,3 +437,5 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         x = x + self.pe[:, : x.size(1)]
         return self.dropout(x)
+
+    
