@@ -1,30 +1,209 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from predict.predict import predict_product
+
+try:
+    from predict.predict import predict_reactants
+except ImportError:
+    predict_reactants = None
+
 app = Flask(__name__)
 
-@app.route('/')
+MAX_PREDICTIONS = 5
+
+
+def _call_predictor(predictor, value, top_k):
+    """Support predictors with either one or two parameters."""
+    try:
+        return predictor(value, top_k=top_k)
+    except TypeError:
+        return predictor(value)
+
+
+def _normalise_predictions(raw_predictions, top_k):
+    if raw_predictions is None:
+        return []
+
+    if not isinstance(raw_predictions, (list, tuple)):
+        raw_predictions = [raw_predictions]
+
+    results = []
+
+    for item in raw_predictions[:MAX_PREDICTIONS]:
+        prediction = item
+        weight = None
+        confidence = None
+
+        if isinstance(item, dict):
+            prediction = (
+                item.get("prediction")
+                or item.get("product_smiles")
+                or item.get("reactant_smiles")
+                or item.get("reactants")
+                or item.get("smiles")
+            )
+            weight = item.get("weight", item.get("score", item.get("probability")))
+            confidence = item.get("confidence")
+
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            prediction, weight = item[0], item[1]
+
+        if prediction is None:
+            continue
+
+        try:
+            weight = float(weight) if weight is not None else None
+        except (TypeError, ValueError):
+            weight = None
+
+        try:
+            confidence = float(confidence) if confidence is not None else None
+        except (TypeError, ValueError):
+            confidence = None
+
+        results.append({
+            "prediction": str(prediction),
+            "weight": weight,
+            "confidence": confidence,
+        })
+
+    if not results:
+        return []
+
+    # Use uniform weights when the model does not return scores.
+    supplied_weights = [r["weight"] for r in results]
+    if all(weight is None for weight in supplied_weights):
+        weights = [1.0 / len(results)] * len(results)
+    else:
+        weights = [
+            max(0.0, weight if weight is not None else 0.0)
+            for weight in supplied_weights
+        ]
+        total = sum(weights)
+        weights = (
+            [weight / total for weight in weights]
+            if total > 0
+            else [1.0 / len(results)] * len(results)
+        )
+
+    for result, weight in zip(results, weights):
+        result["weight"] = round(weight, 6)
+
+        # This is a ranking confidence unless the model supplied calibration.
+        if result["confidence"] is None:
+            result["confidence"] = round(weight, 6)
+        else:
+            result["confidence"] = round(
+                max(0.0, min(1.0, result["confidence"])), 6
+            )
+
+    return results[:top_k]
+
+
+def _get_top_k():
+    try:
+        return max(1, min(int(request.args.get("top_k", 5)), MAX_PREDICTIONS))
+    except (TypeError, ValueError):
+        return MAX_PREDICTIONS
+
+
+def _json_input(field_name):
+    data = request.get_json(silent=True) or {}
+    value = data.get(field_name)
+
+    if not isinstance(value, str) or not value.strip():
+        return None, jsonify({
+            "status": 400,
+            "error": f"'{field_name}' is required and must be a non-empty string"
+        }), 400
+
+    return value.strip(), None, None
+
+
+@app.get("/")
 def home():
-    return {
-        'status': 200,
-        'message': 'Hello, this is the XAI XDL homepage!'
-    }
+    return jsonify({
+        "status": 200,
+        "message": "XAI XDL prediction API",
+        "endpoints": {
+            "forward": "POST /predict/forward",
+            "retrosynthesis": "POST /predict/retrosynthesis",
+            "health": "GET /health",
+        },
+    })
 
 
-@app.route('/predict/<reactant_smiles>')
-def predict(reactant_smiles):
-    product_smiles = predict_product(reactant_smiles)
-    return product_smiles
-
-
-    
-@app.route('/health')
+@app.get("/health")
 def health():
-    return {
-        'status': 'healthy',
-        'message': 'The XAI XDL API is up and running!'
-    }
- 
+    return jsonify({
+        "status": "healthy",
+        "message": "The XAI XDL API is up and running!"
+    })
 
-    
+
+@app.post("/predict/forward")
+def forward_prediction():
+    reactant_smiles, error, status = _json_input("reactant_smiles")
+    if error:
+        return error, status
+
+    top_k = _get_top_k()
+    raw_predictions = _call_predictor(
+        predict_product,
+        reactant_smiles,
+        top_k,
+    )
+
+    return jsonify({
+        "task": "forward_prediction",
+        "reactant_smiles": reactant_smiles,
+        "predictions": _normalise_predictions(raw_predictions, top_k),
+    })
+
+
+@app.post("/predict/retrosynthesis")
+def retrosynthesis_prediction():
+    if predict_reactants is None:
+        return jsonify({
+            "status": 501,
+            "error": (
+                "Retrosynthesis is not implemented. "
+                "Add predict_reactants to predict/predict.py."
+            ),
+        }), 501
+
+    product_smiles, error, status = _json_input("product_smiles")
+    if error:
+        return error, status
+
+    top_k = _get_top_k()
+    raw_predictions = _call_predictor(
+        predict_reactants,
+        product_smiles,
+        top_k,
+    )
+
+    return jsonify({
+        "task": "retrosynthesis",
+        "product_smiles": product_smiles,
+        "predictions": _normalise_predictions(raw_predictions, top_k),
+    })
+
+
+# Backward-compatible forward prediction endpoint.
+@app.get("/predict/<path:reactant_smiles>")
+def legacy_forward_prediction(reactant_smiles):
+    raw_predictions = _call_predictor(
+        predict_product,
+        reactant_smiles,
+        _get_top_k(),
+    )
+
+    return jsonify({
+        "task": "forward_prediction",
+        "reactant_smiles": reactant_smiles,
+        "predictions": _normalise_predictions(raw_predictions, _get_top_k()),
+    })
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

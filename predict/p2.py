@@ -29,12 +29,12 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-DATASET_NAME = "uspto50k_unmapped"
-FILE_NAME = f"{DATASET_NAME}_ed_6-6" 
+DATASET_NAME = "uspto50k_mapped"
+FILE_NAME = f"{DATASET_NAME}_lr_5e-4" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / "dump" /  f"{FILE_NAME}_idx2token.json"
-IS_CHECKPOINT = False  # Set to True if using a checkpointed model, False for a fully trained model
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_idx2token.json"
+
 
 # === Load vocab and model ===
 try:
@@ -44,7 +44,7 @@ try:
         # JSON keys are always strings, convert them back to ints
         idx2token = {int(k): v for k, v in json.load(f).items()}
 except FileNotFoundError:
-    print(f"❌ Error: Vocabulary files not found. Please download them from Colab. {TOKEN2IDX_PATH}")
+    print("❌ Error: Vocabulary files not found. Please download them from Colab.")
     exit()
 
 
@@ -58,7 +58,7 @@ eos_idx = token2idx.get("<eos>", 2)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 N_HEADS = 8
-N_LAYERS = 6
+N_LAYERS = 3
 
 model = Seq2SeqTransformer(
     input_dim=len(token2idx),
@@ -73,61 +73,13 @@ model = Seq2SeqTransformer(
 
 
 try:
-    if IS_CHECKPOINT:
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device)["model_state_dict"])
-    else:
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
     print("✅ Model loaded successfully.")
 except FileNotFoundError:
     print(f"❌ Error: model file not found at {MODEL_PATH}")
     exit()
 
-def get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx,
-                        target_smiles=None):
-
-    best_valid_prediction = ""
-
-    target_canon = ""
-    if target_smiles is not None:
-        target_canon = valid_smiles_or_empty(target_smiles)
-
-    for rank, (seq, score) in enumerate(beam_candidates[:5], 1):
-
-        # Decode token indices
-        tokens = decode_indices(
-            seq.tolist(),
-            idx2token,
-            sos_idx,
-            eos_idx,
-            pad_idx
-        )
-
-        smiles = "".join(tokens)
-
-        # Validate and canonicalize prediction
-        pred_canon = valid_smiles_or_empty(smiles)
-
-        # Skip invalid SMILES
-        if not pred_canon:
-            continue
-
-        # Keep the highest-scoring valid prediction
-        if not best_valid_prediction:
-            best_valid_prediction = pred_canon
-
-        # If target is available, check for exact canonical match
-        if target_canon:
-            if pred_canon == target_canon:
-                return pred_canon
-
-        # print(
-        #     f"{rank}. Score: {score:.4f} | "
-        #     f"SMILES: {pred_canon}"
-        # )
-
-    # No exact match found, return best valid prediction
-    return best_valid_prediction
 
 def predict_product(reactant_smiles, max_len=120, target_smiles=None):
     model.eval()
@@ -142,14 +94,22 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
 
     src_tensor = torch.tensor(src_ids, dtype=torch.long, device=device).unsqueeze(0)
 
-
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
             src_tensor, sos_idx, eos_idx, beam_width=1, max_len=max_len
         )
 
-    return get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx, target_smiles)
-   
+    for seq, score in beam_candidates:
+        tokens = decode_indices(seq.tolist(), idx2token, sos_idx, eos_idx, pad_idx)
+        smiles = "".join(tokens)
+
+        valid_smiles = valid_smiles_or_empty(smiles)
+
+        if valid_smiles:
+            return valid_smiles
+
+    return ""
+
 
 def predict_product_greedy(reactant_smiles, max_len=120):
 
@@ -192,7 +152,9 @@ def _canonical_smiles(smiles):
 
 
 
-def test_prediction_accuracy(csv_path="data/tested.csv", limit=None):
+
+
+def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
     out_file = f"data/{FILE_NAME}_predicted_result.csv"
 
     # --------------------------------------------------------
@@ -244,7 +206,7 @@ def test_prediction_accuracy(csv_path="data/tested.csv", limit=None):
         # Check validity and canonical match
         is_valid_pred = pred_canon is not None
         is_correct = is_valid_pred and (pred_canon == target_canon)
-        
+
         if is_valid_pred:
             valid_smiles_count += 1
         else:
@@ -328,7 +290,7 @@ def test_prediction_accuracy(csv_path="data/tested.csv", limit=None):
 if __name__ == "__main__":
     print("Starting prediction accuracy test...")
     start_time = time.time()
-    input_file = f"data/test.csv"
+    input_file = f"data/{DATASET_NAME}_test.csv"
     
     print("" + "=" * len(input_file))
     print(input_file + '@' + FILE_NAME)

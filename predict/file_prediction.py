@@ -33,10 +33,10 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-FILE_NAME = "uspto50k_mapped"
-MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
-TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
-IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
+FILE_NAME = "uspto50k_unmapped_lr_3e-4"
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_idx2token.json"
 
 
 
@@ -147,7 +147,7 @@ def predict_product(reactant_smiles, max_len=120, target_smiles=None):
 
     with torch.no_grad():
         beam_candidates = model.beam_search_candidates(
-            src_tensor, sos_idx, eos_idx, beam_width=1, max_len=max_len
+            src_tensor, sos_idx, eos_idx, beam_width=5, max_len=max_len
         )
 
     return get_best_prediction(beam_candidates, idx2token, sos_idx, eos_idx, pad_idx, target_smiles)
@@ -250,7 +250,7 @@ def test_prediction_accuracy(csv_path="data/uspto50k/tested.csv", limit=None):
 
 
 def main(limit=None):
-    csv_path = f"data/{FILE_NAME}_test.csv"
+    csv_path = f"data/test.csv" 
     output_csv = f"data/{FILE_NAME}_test_results.csv"
 
     # --------------------------------------------------------
@@ -352,7 +352,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    main(200)
+    main(5)
     
     end_time = time.time()
     
