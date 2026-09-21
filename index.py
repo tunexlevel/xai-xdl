@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from predict.api_prediction import predict_product
+from predict.api_prediction import predict_product, _remove_atom_mapping
 
 try:
     from predict.predict import predict_reactants
@@ -181,7 +181,7 @@ def forward_prediction():
 
     return jsonify({
         "task": "forward_prediction",
-        "reactant_smiles": reactant_smiles,
+        "reactant_smiles": _remove_atom_mapping(reactant_smiles),
         "predictions": _normalise_predictions(raw_predictions, top_k),
     })
 
@@ -233,4 +233,4 @@ def legacy_forward_prediction(reactant_smiles):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
