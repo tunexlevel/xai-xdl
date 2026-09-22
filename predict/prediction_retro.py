@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
     
 import warnings
-from mod.model import Seq2SeqTransformer
+from mod.model_retro import Seq2SeqTransformer
 from helper.utils import get_root_aligned_pair, tokenize_smiles
 from helper.utils import decode_indices, valid_smiles_or_empty, map_smiles, strip_atom_mapping, _canonicalize_reactants
 from rdkit import Chem, RDLogger

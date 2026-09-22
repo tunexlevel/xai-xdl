@@ -1,10 +1,7 @@
 from flask import Flask, jsonify, request
 from predict.api_prediction import predict_product, _remove_atom_mapping
+from predict.api_prediction_retro import predict_reactants
 
-try:
-    from predict.predict import predict_reactants
-except ImportError:
-    predict_reactants = None
 
 app = Flask(__name__)
 
@@ -199,7 +196,7 @@ def retrosynthesis_prediction():
             "status": 501,
             "error": (
                 "Retrosynthesis is not implemented. "
-                "Add predict_reactants to predict/predict.py."
+                "Add predict_reactants to controller."
             ),
         }), 501
 
