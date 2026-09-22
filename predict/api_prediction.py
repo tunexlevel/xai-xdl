@@ -254,6 +254,19 @@ def _normalise_scores(scores):
     ]
 
 
+def _trim_special_attention_rows(attention_weights, sequence, sos_idx, eos_idx):
+    """Align attention rows with target tokens by removing SOS/EOS rows."""
+    if not isinstance(attention_weights, list) or not isinstance(sequence, list):
+        return attention_weights
+
+    if len(attention_weights) != len(sequence):
+        return attention_weights
+
+    start = 1 if sequence and sequence[0] == sos_idx else 0
+    end = -1 if sequence and sequence[-1] == eos_idx else None
+    return attention_weights[start:end]
+
+
 def predict_product(
     reactant_smiles,
     top_k=5,
@@ -330,6 +343,12 @@ def predict_product(
             bundle["eos_idx"],
             bundle["pad_idx"],
         )
+        attention_weights = _trim_special_attention_rows(
+            attention_weights,
+            sequence,
+            bundle["sos_idx"],
+            bundle["eos_idx"],
+        )
 
         smiles = valid_smiles_or_empty("".join(decoded_tokens))
         if not smiles:
@@ -351,6 +370,8 @@ def predict_product(
             "prediction": smiles,
             "score": score,
             "attention_weights": attention_weights,
+            "source_tokens": tokens,
+            "target_tokens": decoded_tokens,
         })
 
         if len(candidates) >= top_k:
@@ -368,6 +389,8 @@ def predict_product(
             "prediction": candidate["prediction"],
             "weight": candidate["attention_weights"],
             "attention_weights": candidate["attention_weights"],
+            "source_tokens": candidate["source_tokens"],
+            "target_tokens": candidate["target_tokens"],
             "confidence": confidence,
             "model": file_name,
             "mapped_input": bundle["mapped"],

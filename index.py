@@ -37,6 +37,8 @@ def _normalise_predictions(raw_predictions, top_k):
         prediction = item
         weight = None
         confidence = None
+        source_tokens = []
+        target_tokens = []
 
         if isinstance(item, dict):
             prediction = (
@@ -52,6 +54,8 @@ def _normalise_predictions(raw_predictions, top_k):
                 "attention_weights",
                 item.get("attention"),
             )
+            source_tokens = item.get("source_tokens", [])
+            target_tokens = item.get("target_tokens", [])
 
         elif isinstance(item, (list, tuple)) and len(item) >= 2:
             prediction, weight = item[0], item[1]
@@ -75,6 +79,8 @@ def _normalise_predictions(raw_predictions, top_k):
             "weight": weight,
             "confidence": confidence,
             "attention_weights": attention_weights,
+            "source_tokens": source_tokens,
+            "target_tokens": target_tokens,
         })
 
     if not results:
