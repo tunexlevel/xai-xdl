@@ -1,0 +1,55 @@
+<XDL>
+  <Synthesis>
+    <Metadata description="sample_protocol_draft" />
+    <Hardware>
+      <Component id="vial_1" type="reactor" />
+      <Component id="vial_2" type="reactor" />
+      <Component id="vial_3" type="reactor" />
+      <Component id="vial_4" type="reactor" />
+      <Component id="vial_5" type="reactor" />
+      <Component id="vial_6" type="reactor" />
+      <Component id="vial_7" type="reactor" />
+      <Component id="vial_8" type="reactor" />
+      <Component id="vial_9" type="reactor" />
+      <Component id="vial_10" type="reactor" />
+      <Component id="vial_11" type="reactor" />
+      <Component id="vial_12" type="reactor" />
+      <Component id="vial_13" type="reactor" />
+      <Component id="vial_14" type="reactor" />
+      <Component id="vial_15" type="reactor" />
+      <Component id="vial_16" type="reactor" />
+      <Component id="vial_17" type="reactor" />
+      <Component id="vial_18" type="reactor" />
+      <Component id="vial_19" type="reactor" />
+      <Component id="vial_20" type="reactor" />
+      <Component id="vial_21" type="reactor" />
+      <Component id="vial_22" type="reactor" />
+      <Component id="vial_23" type="reactor" />
+      <Component id="vial_24" type="reactor" />
+      <Component id="waste" type="waste" />
+      <Component id="uvvis" type="uvvis" />
+    </Hardware>
+    <Reagents>
+      <Reagent name="Aniline" role="reagent" />
+      <Reagent name="Water" role="reagent" />
+    </Reagents>
+    <Procedure>
+      <!-- add aniline 1.0ml to vial 1 -->
+      <Add vessel="vial_1" reagent="Aniline" volume="1.0 mL" />
+      <!-- wash vial 1 with water 2ml x2 -->
+      <CleanVessel vessel="vial_1" solvent="Water" volume="2.0 mL" repeats="2" />
+      <!-- stir vial 1, vial 2 for 10s at medium -->
+      <StartStir vessel="vial_1" stir_speed="medium" />
+      <StartStir vessel="vial_2" stir_speed="medium" />
+      <Wait time="10 s" />
+      <StopStir vessel="vial_1" />
+      <StopStir vessel="vial_2" />
+      <!-- capture dark spectrum -->
+      <CaptureDarkSpectrum />
+      <!-- capture reference spectrum vial 24 -->
+      <CaptureReferenceSpectrum vial="vial_24" />
+      <!-- measure spectrum vial 3 -->
+      <MeasureSpectrum vial="vial_3" integration_time_ms="50" led_brightness="255" />
+    </Procedure>
+  </Synthesis>
+</XDL>

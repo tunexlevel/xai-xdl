@@ -1,12 +1,205 @@
 
 
+import json
+import re
+from typing import Any
+from xml.etree import ElementTree
+from xml.sax.saxutils import escape, quoteattr
+
+
+WHEEL_ACTIONS = {
+    "transfer",
+    "transfer_waste",
+    "wash",
+    "timed_stir",
+    "wait",
+    "measure_spectrum",
+    "monitor_reaction_spectrum",
+    "capture_reference_spectrum",
+    "capture_dark_spectrum",
+    "capture_image",
+    "start_video",
+    "stop_video",
+}
+
+
+def read_config() -> dict[str, Any]:
+    """Return protocol AI configuration when no backend is configured."""
+    return {}
+
+
+def _legacy_command_available(command: Any) -> bool:
+    return bool(command)
+
+
+def run_ai(prompt: str, timeout_sec: int = 8) -> str:
+    raise RuntimeError("No local AI backend is configured.")
+
+
+def recipe_to_protocol(recipe_text: str) -> list[dict[str, Any]]:
+    """Parse recipe lines locally, without requiring an AI backend."""
+    if not isinstance(recipe_text, str) or not recipe_text.strip():
+        raise ValueError("Recipe text must be a non-empty string.")
+
+    protocol: list[dict[str, Any]] = []
+    unsupported: list[str] = []
+    for line in recipe_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parsed = _ai_wheel_line(line)
+        if parsed:
+            protocol.extend(parsed)
+        else:
+            unsupported.append(line)
+
+    if unsupported:
+        raise ValueError(
+            "Could not parse recipe line(s): " + "; ".join(unsupported)
+        )
+    validate_protocol(protocol)
+    return protocol
+
+
+def reaction_to_draft_protocol(
+    reactant_smiles: str,
+    product_smiles: str = "",
+    volume_ml: float = 1.0,
+    stir_duration_sec: int = 60,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Create a reviewable protocol draft when no experimental recipe exists."""
+    if not isinstance(reactant_smiles, str) or not reactant_smiles.strip():
+        raise ValueError("Reactant SMILES must be a non-empty string.")
+
+    components = [component.strip() for component in reactant_smiles.split(".")]
+    components = [component for component in components if component]
+    if not components:
+        raise ValueError("Reactant SMILES contains no components.")
+
+    volume = float(volume_ml)
+    duration = int(stir_duration_sec)
+    if volume <= 0 or duration <= 0:
+        raise ValueError("Draft volume and stir duration must be positive.")
+
+    steps: list[dict[str, Any]] = []
+    for component in components:
+        steps.append({
+            "action": "transfer",
+            "reagent": component,
+            "volume_ml": volume,
+            "destination": "vial_1",
+            "source_text": f"add {component} {volume:g}ml to vial 1",
+        })
+    steps.extend([
+        {
+            "action": "timed_stir",
+            "vials": ["vial_1"],
+            "duration_sec": duration,
+            "speed": "medium",
+            "source_text": f"stir vial 1 for {duration}s at medium",
+        },
+        {
+            "action": "measure_spectrum",
+            "vial": "vial_1",
+            "integration_time_ms": 50,
+            "led_brightness": 255,
+            "source_text": "measure spectrum vial 1",
+        },
+    ])
+    validate_protocol(steps)
+    warnings = [
+        "Draft protocol generated from SMILES because recipe_text was not supplied.",
+        "Each reactant component was assigned 1.0 mL; verify stoichiometry and concentration.",
+        "Stirring was assigned 60 seconds at medium speed; verify reaction conditions.",
+        "Temperature, solvent, catalyst, atmosphere, and work-up are unknown.",
+    ]
+    if product_smiles:
+        warnings.append(
+            "The predicted product is included for review only; it does not validate the procedure."
+        )
+    return steps, warnings
+
+
+def validate_protocol(
+    protocol: list[dict[str, Any]],
+    platform: str = "wheel_platform",
+) -> None:
+    """Reject incomplete or unsupported steps before XDL generation."""
+    if not isinstance(protocol, list) or not protocol:
+        raise ValueError("Protocol must contain at least one step.")
+    if platform != "wheel_platform":
+        raise ValueError(f"Unsupported protocol platform: {platform}")
+
+    for index, step in enumerate(protocol, start=1):
+        if not isinstance(step, dict):
+            raise ValueError(f"Step {index} must be an object.")
+        action = str(step.get("action", "")).strip().lower()
+        if action not in WHEEL_ACTIONS:
+            raise ValueError(f"Step {index} has unsupported action: {action!r}")
+
+        if action in {"transfer", "wash"}:
+            _require_text(step, "reagent", index)
+            _require_positive(step, "volume_ml", index)
+            _require_vial(step.get("destination"), index, "destination")
+        elif action == "transfer_waste":
+            _require_positive(step, "volume_ml", index)
+            _require_vial(step.get("source_vial"), index, "source_vial")
+        elif action == "timed_stir":
+            vials = _normalize_vials(step.get("vials"))
+            if not vials:
+                raise ValueError(f"Step {index} requires at least one vial.")
+            for vial in vials:
+                _require_vial(vial, index, "vials")
+            _require_positive(step, "duration_sec", index)
+            _require_text(step, "speed", index)
+        elif action == "wait":
+            _require_positive(step, "duration_sec", index)
+        elif action in {"measure_spectrum", "monitor_reaction_spectrum"}:
+            _require_vial(step.get("vial"), index, "vial")
+            if action == "monitor_reaction_spectrum":
+                _require_positive(step, "duration_sec", index)
+                _require_positive(step, "interval_sec", index)
+        elif action == "capture_reference_spectrum":
+            if step.get("vial"):
+                _require_vial(step.get("vial"), index, "vial")
+        elif action in {"capture_image", "start_video"}:
+            _require_text(step, "filename", index)
+
+
+def _require_text(step: dict[str, Any], field: str, index: int) -> str:
+    value = str(step.get(field, "")).strip()
+    if not value:
+        raise ValueError(f"Step {index} requires {field!r}.")
+    return value
+
+
+def _require_positive(step: dict[str, Any], field: str, index: int) -> float:
+    try:
+        value = float(step.get(field))
+    except (TypeError, ValueError):
+        raise ValueError(f"Step {index} requires numeric {field!r}.") from None
+    if value <= 0:
+        raise ValueError(f"Step {index} requires positive {field!r}.")
+    return value
+
+
+def _require_vial(value: Any, index: int, field: str) -> str:
+    try:
+        vial = _normalize_vial(value)
+    except (RuntimeError, ValueError):
+        raise ValueError(f"Step {index} has invalid {field!r}: {value!r}.") from None
+    number = int(vial.split("_")[1])
+    if number < 1 or number > 24:
+        raise ValueError(f"Step {index} has vial outside vial_1..vial_24.")
+    return vial
+
 
 def ai_available() -> bool:
     config = read_config()
     model = str(config.get("ollama_model") or "qwen2.5:1.5b").strip() or "qwen2.5:1.5b"
     backend = str(config.get("backend") or "auto").strip().lower()
-    if backend in {"auto", "portable_ollama", "ollama"} and ollama_bridge.ollama_available(model):
-        return True
+    if backend in {"portable_ollama", "ollama"}:
+        return False
     command = config.get("command", [])
     return _legacy_command_available(command)
 
@@ -14,28 +207,30 @@ def ai_recipe_available() -> bool:
     return ai_available()
 
 def ai_recipe_to_protocol(recipe_text: str) -> list[dict[str, Any]]:
-    config = _read_config()
-    if not ai_available():
-        raise RuntimeError("AI Assist is not configured yet.")
-    timeout = max(3, min(int(config.get("timeout_sec", 8) or 8), 8))
     lines = [line.strip() for line in recipe_text.splitlines() if line.strip()]
     protocol: list[dict[str, Any]] = []
+    unresolved: list[str] = []
     for line in lines:
         direct = _ai_wheel_line(line)
         if direct:
             protocol.extend(direct)
-            continue
-        try:
+        else:
+            unresolved.append(line)
+
+    if unresolved:
+        config = _read_config()
+        if not ai_available():
+            raise RuntimeError(
+                "AI Assist is not configured for line(s): "
+                + "; ".join(unresolved)
+            )
+        timeout = max(3, min(int(config.get("timeout_sec", 8) or 8), 8))
+        for line in unresolved:
             prompt = _build_prompt(line)
             payload = _run_ai_text(prompt, timeout)
             protocol.extend(_normalize_protocol(payload, line))
-        except Exception:
-            repaired = _repair_wheel_line(line)
-            direct = _ai_wheel_line(repaired)
-            if direct:
-                protocol.extend(direct)
-                continue
-            raise
+
+    validate_protocol(protocol)
     return protocol
 
 
@@ -997,12 +1192,86 @@ def _infer_reagents(protocol: list[dict[str, Any]]) -> list[str]:
     return seen
 
 
+def validate_xdl(xdl: str) -> None:
+    """Validate the local XDL structure before it is handed to a runner."""
+    if not isinstance(xdl, str) or not xdl.strip():
+        raise ValueError("XDL must be a non-empty string.")
+
+    try:
+        root = ElementTree.fromstring(xdl)
+    except ElementTree.ParseError as error:
+        raise ValueError(f"XDL is not well-formed XML: {error}") from error
+
+    if root.tag != "XDL":
+        raise ValueError("XDL document must have an XDL root element.")
+
+    synthesis = root.find("Synthesis")
+    if synthesis is None:
+        raise ValueError("XDL document requires a Synthesis element.")
+    if synthesis.find("Metadata") is None:
+        raise ValueError("XDL document requires Metadata.")
+
+    hardware = synthesis.find("Hardware")
+    if hardware is None:
+        raise ValueError("XDL document requires Hardware.")
+    component_ids = {
+        component.get("id")
+        for component in hardware.findall("Component")
+    }
+    required_components = {f"vial_{number}" for number in range(1, 25)} | {"waste"}
+    missing_components = required_components - component_ids
+    if missing_components:
+        missing = ", ".join(sorted(missing_components))
+        raise ValueError(f"XDL hardware is missing component(s): {missing}")
+
+    reagents = synthesis.find("Reagents")
+    if reagents is None:
+        raise ValueError("XDL document requires Reagents.")
+    for reagent in reagents.findall("Reagent"):
+        if not str(reagent.get("name", "")).strip():
+            raise ValueError("Every XDL reagent requires a name.")
+
+    procedure = synthesis.find("Procedure")
+    if procedure is None:
+        raise ValueError("XDL document requires Procedure.")
+    required_attributes = {
+        "Add": ("vessel", "reagent", "volume"),
+        "Transfer": ("from_vessel", "to_vessel", "volume"),
+        "CleanVessel": ("vessel", "solvent", "volume", "repeats"),
+        "StartStir": ("vessel", "stir_speed"),
+        "StopStir": ("vessel",),
+        "Wait": ("time",),
+        "MeasureSpectrum": ("vial",),
+        "MonitorReactionSpectrum": ("vial", "time", "interval"),
+        "CaptureImage": ("filename",),
+        "StartVideo": ("filename",),
+    }
+    allowed_tags = set(required_attributes) | {
+        "HeatChill",
+        "HeatChillToTemp",
+        "StartHeatChill",
+        "StopHeatChill",
+        "CaptureReferenceSpectrum",
+        "CaptureDarkSpectrum",
+        "StopVideo",
+    }
+    for step in procedure:
+        if step.tag not in allowed_tags:
+            raise ValueError(f"Unsupported XDL procedure element: {step.tag}")
+        for attribute in required_attributes.get(step.tag, ()):
+            if not str(step.get(attribute, "")).strip():
+                raise ValueError(
+                    f"XDL element {step.tag} requires attribute {attribute!r}."
+                )
+
+
 
 def protocol_to_xdl(
     protocol: list[dict[str, Any]],
     run_name: str = "from_gui",
     include_source_comments: bool = True,
 ) -> str:
+    validate_protocol(protocol)
     reagents = _infer_reagents(protocol)
     lines: list[str] = ["<XDL>", "  <Synthesis>", f'    <Metadata description="{run_name}" />', "    <Hardware>"]
     for vial in [f"vial_{i}" for i in range(1, 25)]:
@@ -1101,5 +1370,21 @@ def protocol_to_xdl(
         elif action == "stop_video":
             lines.append("      <StopVideo />")
     lines.extend(["    </Procedure>", "  </Synthesis>", "</XDL>"])
-    return "\n".join(lines) + "\n"
+    xdl = "\n".join(lines) + "\n"
+    validate_xdl(xdl)
+    return xdl
+
+
+if __name__ == "__main__":
+    sample_recipe = """\
+add aniline 1.0ml to vial 1
+wash vial 1 with water 2ml x2
+stir vial 1, vial 2 for 10s at medium
+capture dark spectrum
+capture reference spectrum vial 24
+measure spectrum vial 3
+"""
+    sample_protocol = recipe_to_protocol(sample_recipe)
+    print(json.dumps(sample_protocol, indent=2))
+    print(protocol_to_xdl(sample_protocol, run_name="console_test"))
 

@@ -1,6 +1,12 @@
 from flask import Flask, jsonify, request
 from predict.api_prediction import predict_product, _remove_atom_mapping
 from predict.api_prediction_retro import predict_reactants
+from explain import explain_prediction
+from protocol.index import (
+    protocol_to_xdl,
+    reaction_to_draft_protocol,
+    recipe_to_protocol,
+)
 
 
 app = Flask(__name__)
@@ -118,8 +124,9 @@ def _normalise_predictions(raw_predictions, top_k):
 
 
 def _get_top_k():
+    data = request.get_json(silent=True) or {}
     try:
-        return max(1, min(int(request.args.get("top_k", 5)), MAX_PREDICTIONS))
+        return max(1, min(int(data.get("top_k", 5)), MAX_PREDICTIONS))
     except (TypeError, ValueError):
         return MAX_PREDICTIONS
 
@@ -140,11 +147,94 @@ def _json_input(field_name):
 def _get_model_name():
     data = request.get_json(silent=True) or {}
     return (
-        request.args.get("model")
-        or request.args.get("file_name")
+        data.get("model_name")
         or data.get("model")
         or data.get("file_name")
     )
+
+
+def _protocol_request():
+    data = request.get_json(silent=True) or {}
+    include_protocol = data.get("include_protocol", False)
+    if isinstance(include_protocol, str):
+        include_protocol = include_protocol.strip().lower() in {"1", "true", "yes"}
+    return bool(include_protocol), data.get("recipe_text")
+
+
+def _explanation_requested():
+    data = request.get_json(silent=True) or {}
+    value = data.get("include_explanation", False)
+    if isinstance(value, str):
+        value = value.strip().lower() in {"1", "true", "yes"}
+    return bool(value)
+
+
+def _attach_explanation(prediction, reactants, product):
+    return explain_prediction(
+        reactants,
+        product,
+        source_tokens=prediction.get("source_tokens"),
+        target_tokens=prediction.get("target_tokens"),
+        attention_weights=prediction.get("attention_weights"),
+    )
+
+
+def _attach_protocol(recipe_text, reactant_smiles, product_smiles, run_name="from_api"):
+    if isinstance(recipe_text, str) and recipe_text.strip():
+        steps = recipe_to_protocol(recipe_text)
+        warnings = [
+            "Protocol is generated from supplied recipe text and requires human approval."
+        ]
+    else:
+        steps, warnings = reaction_to_draft_protocol(
+            reactant_smiles,
+            product_smiles=product_smiles,
+        )
+    xdl = protocol_to_xdl(steps, run_name=run_name)
+    return {
+        "status": "needs_review",
+        "steps": steps,
+        "xdl": xdl,
+        "warnings": warnings,
+    }
+
+
+@app.post("/generate/xdl")
+def generate_xdl():
+    """Generate validated XDL from recipe text or reactant SMILES."""
+    data = request.get_json(silent=True) or {}
+    recipe_text = data.get("recipe_text")
+    reactant_smiles = data.get("reactant_smiles", "")
+    product_smiles = data.get("product_smiles", "")
+    run_name = str(data.get("run_name") or "xdl_generation").strip()
+
+    if not isinstance(recipe_text, str) or not recipe_text.strip():
+        recipe_text = None
+    if not isinstance(reactant_smiles, str):
+        reactant_smiles = ""
+    if not isinstance(product_smiles, str):
+        product_smiles = ""
+
+    if recipe_text is None and not reactant_smiles.strip():
+        return jsonify({
+            "status": "error",
+            "error": "Provide either 'recipe_text' or 'reactant_smiles'.",
+        }), 400
+
+    try:
+        protocol = _attach_protocol(
+            recipe_text,
+            reactant_smiles,
+            product_smiles,
+            run_name=run_name or "xdl_generation",
+        )
+    except (RuntimeError, ValueError) as error:
+        return jsonify({
+            "status": "error",
+            "error": str(error),
+        }), 400
+
+    return jsonify(protocol)
 
 
 @app.get("/")
@@ -155,6 +245,7 @@ def home():
         "endpoints": {
             "forward": "POST /predict/forward",
             "retrosynthesis": "POST /predict/retrosynthesis",
+            "xdl": "POST /generate/xdl",
             "health": "GET /health",
         },
     })
@@ -182,11 +273,46 @@ def forward_prediction():
         _get_model_name(),
     )
 
-    return jsonify({
+    include_protocol, recipe_text = _protocol_request()
+    predictions = _normalise_predictions(raw_predictions, top_k)
+    if _explanation_requested():
+        for prediction in predictions:
+            prediction["explanation"] = _attach_explanation(
+                prediction,
+                reactant_smiles,
+                prediction["prediction"],
+            )
+    response = {
         "task": "forward_prediction",
         "reactant_smiles": _remove_atom_mapping(reactant_smiles),
-        "predictions": _normalise_predictions(raw_predictions, top_k),
-    })
+        "predictions": predictions,
+    }
+    if include_protocol:
+        try:
+            prediction_smiles = predictions[0]["prediction"] if predictions else ""
+            protocol = _attach_protocol(
+                recipe_text,
+                reactant_smiles,
+                prediction_smiles,
+                run_name="forward_prediction",
+            )
+        except (RuntimeError, ValueError) as error:
+            return jsonify({
+                **response,
+                "protocol": {
+                    "status": "needs_review",
+                    "steps": [],
+                    "xdl": None,
+                    "warnings": [str(error)],
+                },
+            })
+        for prediction in predictions:
+            prediction["protocol"] = {
+                **protocol,
+                "product_smiles": prediction["prediction"],
+            }
+        response["protocol"] = protocol
+    return jsonify(response)
 
 
 @app.post("/predict/retrosynthesis")
@@ -212,11 +338,47 @@ def retrosynthesis_prediction():
         _get_model_name(),
     )
 
-    return jsonify({
+    include_protocol, recipe_text = _protocol_request()
+    predictions = _normalise_predictions(raw_predictions, top_k)
+    if _explanation_requested():
+        for prediction in predictions:
+            prediction["explanation"] = _attach_explanation(
+                prediction,
+                prediction["prediction"],
+                product_smiles,
+            )
+    response = {
         "task": "retrosynthesis",
         "product_smiles": _remove_atom_mapping(product_smiles),
-        "predictions": _normalise_predictions(raw_predictions, top_k),
-    })
+        "predictions": predictions,
+    }
+    if include_protocol:
+        try:
+            predicted_reactants = predictions[0]["prediction"] if predictions else ""
+            protocol = _attach_protocol(
+                recipe_text,
+                predicted_reactants,
+                product_smiles,
+                run_name="retrosynthesis",
+            )
+        except (RuntimeError, ValueError) as error:
+            return jsonify({
+                **response,
+                "protocol": {
+                    "status": "needs_review",
+                    "steps": [],
+                    "xdl": None,
+                    "warnings": [str(error)],
+                },
+            })
+        for prediction in predictions:
+            prediction["protocol"] = {
+                **protocol,
+                "product_smiles": product_smiles,
+            }
+        response["protocol"] = protocol
+
+    return jsonify(response)
 
 
 # Backward-compatible forward prediction endpoint.
