@@ -144,3 +144,10 @@ Training completed in 143.87 seconds.
 
 
 I faced a challenged where the forward prediction was no longer. For several hours I couldn't solve the problem, until i discovered that the problem was the model where I changed the embedding function under the generated method. Lesson is that prediction is also affected by the model setup too not just the parameters, checkpoints or tokens vocabulary.
+
+
+
+Fixes:
+1. Cleaner way to prepare smiles - done
+2. Can the tokens be converted back to normal smiles rather than rooted tokens for attention weights - done
+3. Fix attention weights - done

@@ -214,7 +214,7 @@ def retrosynthesis_prediction():
 
     return jsonify({
         "task": "retrosynthesis",
-        "product_smiles": product_smiles,
+        "product_smiles": _remove_atom_mapping(product_smiles),
         "predictions": _normalise_predictions(raw_predictions, top_k),
     })
 

@@ -107,7 +107,7 @@ def tokenize_smiles(smiles: str):
 
 
 
-def strip_atom_mapping(smi: str):
+def strip_atom_mapping(smi: str, canonical=True):
     """
     Removes atom mapping numbers from SMILES using RDKit.
     Returns the original string if RDKit cannot parse it.
@@ -122,7 +122,8 @@ def strip_atom_mapping(smi: str):
     for atom in mol.GetAtoms():
         atom.SetAtomMapNum(0)
 
-    return Chem.MolToSmiles(mol, canonical=True)
+    return Chem.MolToSmiles(mol, canonical=canonical)
+
 
 
 def clean_and_tokenize(smiles):
@@ -200,6 +201,22 @@ def _canonicalize_reactants(smiles):
 
     return ".".join(sorted(mols))
 
+def canonicalize_preserve_molecule_order(smiles):
+    molecules = smiles.split('.')
+
+    canonical_molecules = []
+
+    for smi in molecules:
+        mol = Chem.MolFromSmiles(smi)
+
+        if mol is None:
+            raise ValueError(f"Invalid SMILES: {smi}")
+
+        canonical_molecules.append(
+            Chem.MolToSmiles(mol, canonical=True)
+        )
+
+    return '.'.join(canonical_molecules)
 
 def get_root_aligned_pair(product_mapped_smi: str, reactant_mapped_smi: str, augment_root: bool = False):
     """
@@ -235,5 +252,36 @@ def get_root_aligned_pair(product_mapped_smi: str, reactant_mapped_smi: str, aug
     reac_final = strip_regex.sub('', reac_rooted)
 
     return prod_final, reac_final
+
+
+def get_single_root_aligned_pair(product_mapped_smi: str, augment_root: bool = False):
+    """
+    Generates a Root-aligned SMILES pair (R-SMILES) for retrosynthesis.
+    Requires atom-mapped inputs (e.g. from standard mapped USPTO-50k).
+    """
+    prod_mol = Chem.MolFromSmiles(product_mapped_smi)
+
+    if prod_mol is None:
+        return None, None
+
+    # Step A: Collect mapped heavy atoms present in both product and reactants
+    prod_map_to_idx = {atom.GetAtomMapNum(): atom.GetIdx() for atom in prod_mol.GetAtoms() if atom.GetAtomMapNum() > 0}
+
+    common_maps = list(set(prod_map_to_idx.keys()))
+    if not common_maps:
+        return None, None
+
+    # Step B: Pick a shared root atom (either random for augmentation or deterministic)
+    chosen_map = random.choice(common_maps) if augment_root else sorted(common_maps)[0]
+    prod_root_idx = prod_map_to_idx[chosen_map]
+
+    # Step C: Generate rooted SMILES (canonical=False preserves the rooted traversal)
+    prod_rooted = Chem.MolToSmiles(prod_mol, rootedAtAtom=prod_root_idx, canonical=False)
+
+    # Step D: Strip atom mappings with regex so RDKit does NOT re-canonicalize/scramble ordering
+    strip_regex = re.compile(r':\d+')
+    prod_final = strip_regex.sub('', prod_rooted)
+
+    return prod_final
 
 

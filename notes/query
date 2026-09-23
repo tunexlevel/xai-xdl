@@ -10,3 +10,330 @@ Kindly check the code below and let me know if there is any issue with the imple
 
 Q2
 ====
+I want to incorporate a large language model that would assit with the following:
+1. Generate steps in text to prepare the predicted valid outcome, specify the chemicals needed, quantity, temperature and all necessary parameters, that I can pass to a function to convert it to xdl
+    example of a text steps:
+    Examples:
+    add aniline 1.0ml to vial 1
+    wash vial 1 with water 2ml x2
+    stir vial 1, vial 2 for 10s at medium
+    capture dark spectrum
+    capture reference spectrum vial 24
+    measure spectrum vial 3
+
+2. Interpret or explain attention weights generated to the chemist so they can have an understand of how the system reasons and help them to relate with the system more easily.
+
+
+Suggest ways to achieve the above.
+
+
+I’ll trace the existing prediction, XDL/data, and attention-related code so the suggestions fit your current pipeline rather than assuming a generic LLM stack. I’ll focus on the smallest useful integration boundary: where a predicted reaction becomes a protocol, and where model internals can be turned into chemist-facing evidence.
+
+Search complete: Trace repo integration points
+
+Searched codebase for "reaction prediction pipeline XDL protocol generation parsing chemical procedure", 14 results
+
+Searched codebase for "attention extraction visualization LLM integration protocol drafting validation", 16 results
+
+Searched for files matching `**/*reaction*prediction*.{py,js,ts,java,go,rb}`, no matches
+
+Searched for files matching `**/*xdl*.{py,js,ts,java,go,rb,yml,yaml,json}`, no matches
+
+Searched for files matching `**/*attention*.{py,js,ts,java,go,rb,torch,pt,tf}`, no matches
+
+Searched for regex `reaction.*prediction|prediction.*reaction|protocol.*generation|protocol.*parsing`, 8 results
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+Searched for regex `attention.*extraction|attention.*visualization|attention.*map|self.*attention`, 5 results
+
+Searched for files matching `**/*llm*.{py,js,ts,java,go,rb,h,hpp,py,js,ts}`, no matches
+
+Searched for files matching `**/notes/**/*reaction*.{md,txt,docx}`, no matches
+
+Searched for files matching `**/*protocol*.{py,js,ts,java,go,rb,yml,yaml,json}`, no matches
+
+Read 
+
+Searched codebase for "XDL protocol format chemical reaction procedure validation", 19 results
+
+Searched for files matching `**/predict*.py`, 3 matches
+
+Searched for files matching `**/model_*.py`, 5 matches
+
+Searched for files matching `**/evaluate_top_k*.py`, no matches
+
+Searched for files matching `**/utils*.py`, 1 match
+
+Searched for files matching `**/data_loader*.py`, 1 match
+
+Searched for files matching `**/notes/**`, 7 matches
+
+Searched for regex `generate_with_attention|return attention weights|attention weight heatmap|self._get_sequence_attention`, 3 results
+
+Searched for regex `reaction_model.pt|token2idx.json|idx2token.json`, 59 results
+
+Searched for regex `XDL|xdl|chemical procedure|reaction protocol`, 17 results
+
+The repository already has the key ingredients for a staged design: a custom PyTorch Transformer with a hand-written greedy decoder, and prior notes showing attention capture was not yet implemented. I’m checking the actual current files now, especially whether XDL exists locally or must be introduced as a separate protocol layer, so the recommendation can distinguish what is immediately feasible from what requires new training data.
+
+Read 
+
+Searching for regex `attention|xdl|protocol|procedure|generate(` (`xai-xdl` · `**/*.py`)
+
+Read , lines 1 to 260
+
+Read , lines 1 to 260
+
+A useful detail surfaced: `model.py` already returns cross-attention from its custom `generate` path, but the current beam-search path does not expose attention, and the captured tensor is only the final decoder layer’s attention. The main gap is therefore not “add an LLM everywhere”; it is defining a validated protocol representation and preserving provenance from prediction tokens to protocol fields and explanations.
+
+Read 
+
+Searched for text `attention|xdl|XDL|protocol|procedure|beam_search_candidates` (`**/*.py`), 127 results
+
+Read , lines 1 to 240
+
+Read , lines 1 to 220
+
+Read , lines 240 to 430
+
+Read , lines 200 to 380
+
+Read , lines 1 to 150
+
+Read 
+
+**Recommended architecture**
+
+Use three separate components:
+
+1. **Reaction predictor**
+   - Keep the current Transformer for reactant-to-product prediction.
+   - Return top-$k$ products, scores, source tokens, target tokens, and attention metadata.
+   - Existing support is already present in `model.py:264-391` and `api_prediction.py:300-380`.
+
+2. **Protocol planner**
+   - Add an LLM that converts a validated reaction prediction into a structured protocol.
+   - Do not ask it to directly produce arbitrary XDL. Require JSON conforming to a schema, then compile that JSON into XDL deterministically.
+
+3. **Protocol validator/compiler**
+   - Validate chemical identity with RDKit.
+   - Validate units, quantities, temperatures, vessel references, ordering, and available hardware.
+   - Reject missing or uncertain values instead of inventing them.
+   - Convert only validated structured data into XDL.
+
+A suitable intermediate representation might be:
+
+```json
+{
+  "reaction": {
+    "reactants": [
+      {
+        "name": "aniline",
+        "smiles": "Nc1ccccc1",
+        "amount": {"value": 1.0, "unit": "mL"},
+        "vessel": "vial_1",
+        "confidence": 0.92
+      }
+    ],
+    "product_smiles": "...",
+    "temperature": {"value": 25, "unit": "C"},
+    "atmosphere": "air"
+  },
+  "steps": [
+    {
+      "operation": "add",
+      "reagent": "aniline",
+      "amount": {"value": 1.0, "unit": "mL"},
+      "destination": "vial_1"
+    },
+    {
+      "operation": "wash",
+      "vessel": "vial_1",
+      "solvent": "water",
+      "amount": {"value": 2.0, "unit": "mL"},
+      "repetitions": 2
+    },
+    {
+      "operation": "stir",
+      "vessels": ["vial_1", "vial_2"],
+      "duration": {"value": 10, "unit": "s"},
+      "speed": "medium"
+    }
+  ]
+}
+```
+
+The LLM output should include `source`, `confidence`, and `assumptions` for every experimentally important field.
+
+**Important data limitation**
+
+Your current USPTO-style data primarily contains reactants and products. It generally does not provide reliable:
+
+- reagent quantities
+- solvent volumes
+- temperature
+- mixing speed
+- reaction time
+- vessel identity
+- work-up instructions
+- spectroscopy parameters
+
+Therefore, an LLM cannot reliably generate those values from the predicted product alone. It will produce plausible-looking procedures, but they may be chemically or operationally unsafe.
+
+You would need procedure data, such as:
+
+- Open Reaction Database records
+- Electronic laboratory notebook exports
+- Patents containing experimental sections
+- Internal laboratory protocols
+- XDL-labelled procedures
+- Manually reviewed reaction-to-procedure examples
+
+A good first version should generate a **draft protocol with explicit unknowns**, for example:
+
+```text
+Temperature: UNKNOWN
+Reaction time: UNKNOWN
+Solvent volume: UNKNOWN
+Reason: no procedure metadata was available for this reaction
+```
+
+**Recommended LLM workflow**
+
+Use retrieval-augmented generation rather than a free-form prompt:
+
+```text
+Reactant/product prediction
+        |
+        v
+Retrieve similar validated reactions and procedures
+        |
+        v
+LLM creates structured protocol JSON
+        |
+        v
+Schema validation
+        |
+        v
+Chemical and hardware validation
+        |
+        v
+XDL compiler
+        |
+        v
+Human approval
+        |
+        v
+Robot execution
+```
+
+The LLM should receive:
+
+- reactant and product SMILES
+- reaction class
+- atom-mapping information, if available
+- retrieved similar procedures
+- available chemical inventory
+- available vessels and instruments
+- supported XDL operations
+- strict instruction not to infer missing experimental parameters
+
+Use constrained JSON generation or function/tool calling. Avoid accepting unrestricted prose as the compiler input.
+
+**Generating text instructions**
+
+You can generate readable text from the structured protocol after validation:
+
+```text
+1. Add 1.0 mL aniline to vial 1.
+2. Wash vial 1 with 2.0 mL water twice.
+3. Stir vial 1 and vial 2 for 10 seconds at medium speed.
+4. Capture a dark spectrum.
+5. Capture a reference spectrum from vial 24.
+6. Measure the spectrum of vial 3.
+```
+
+This gives you two useful outputs:
+
+- machine-readable protocol JSON for XDL conversion
+- human-readable instructions for chemist review
+
+The text should be generated from JSON, not the other way around.
+
+**Attention interpretation**
+
+Your current API already exposes:
+
+- `source_tokens`
+- `target_tokens`
+- `attention_weights`
+
+See `api_prediction.py:331-380` and `index.py:40-90`.
+
+However, attention should be presented as **evidence of token association**, not as a faithful explanation of the model’s reasoning. Attention weights alone do not prove causal importance.
+
+For a chemist-facing explanation, combine:
+
+1. **Attention visualization**
+   - Show which reactant tokens received high cross-attention for each generated product token.
+   - Aggregate SMILES tokens into atoms or molecular fragments where possible.
+
+2. **Atom-mapped correspondence**
+   - Translate high-attention tokens into mapped atoms.
+   - Display likely changed bonds, leaving groups, and retained fragments.
+
+3. **Counterfactual tests**
+   - Remove or mask a reactant atom or component.
+   - Re-run prediction.
+   - Report whether the product or confidence changes.
+
+4. **Alternative predictions**
+   - Show top-$k$ candidates and their scores.
+   - Explain where candidates differ.
+
+5. **Chemical validation**
+   - Check valence, sanitization, atom conservation, and reaction-center plausibility with RDKit.
+
+A useful explanation might look like:
+
+```text
+The prediction depends strongly on:
+- the aromatic carbon bonded to Cl in reactant 1
+- the nitrogen-containing component in reactant 2
+- the C-Cl bond region as a likely reaction center
+
+Removing the nitrogen-containing component changed the top prediction.
+This supports, but does not prove, its role in the prediction.
+```
+
+**Current attention caveat**
+
+In `model.py:264-309`, attention is recomputed for the completed sequence by `_get_sequence_attention`. That is useful for inspection, but it is not necessarily the exact attention trajectory used during beam search. It also returns attention from the final decoder layer, averaged over heads.
+
+For better diagnostics, store:
+
+- decoder layer
+- attention head
+- generation step
+- source token
+- target token
+- token probability/log probability
+- selected and competing token probabilities
+
+Then aggregate only for display. Preserve the raw tensor for analysis.
+
+**Suggested implementation phases**
+
+1. Define a small protocol JSON schema covering only currently supported XDL operations.
+2. Add a deterministic JSON-to-XDL compiler.
+3. Add protocol validation and an approval step.
+4. Build a small reviewed dataset of reaction inputs and procedures.
+5. Start with retrieval plus prompting.
+6. Evaluate against exact operation matching, parameter error, chemical validity, and human review.
+7. Fine-tune an LLM only after enough reviewed procedure examples exist.
+8. Add attention/counterfactual explanations to the existing prediction API.
+
+The most important design principle is: **the reaction model predicts chemistry; the protocol system plans operations; validators decide what is executable.** The LLM should assist with planning and language, but it should never be the final authority for chemical quantities or robot execution.

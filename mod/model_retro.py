@@ -179,7 +179,64 @@ class Seq2SeqTransformer(nn.Module):
         )
         return ys, combined_attn
 
-    def beam_search_candidates(self, src, sos_idx, eos_idx, beam_width=8, max_len=120):
+    def _get_sequence_attention(self, memory, src_padding_mask, sequence):
+        """Return averaged final-layer cross-attention by target token."""
+        device = sequence.device
+        target = sequence.unsqueeze(0)
+        target_embedding = self.positional_encoding(
+            self.embedding(target) * math.sqrt(self.emb_dim)
+        )
+        target_mask = self.generate_square_subsequent_mask(
+            target.size(1),
+        ).to(device)
+        target_padding_mask = target == self.pad_idx
+
+        output = target_embedding
+        last_attention = None
+
+        for layer in self.transformer.decoder.layers:
+            self_attention = layer.self_attn(
+                output,
+                output,
+                output,
+                attn_mask=target_mask,
+                key_padding_mask=target_padding_mask,
+                need_weights=False,
+            )[0]
+            output = layer.norm1(output + layer.dropout1(self_attention))
+
+            cross_output, attention = layer.multihead_attn(
+                output,
+                memory,
+                memory,
+                key_padding_mask=src_padding_mask,
+                need_weights=True,
+                average_attn_weights=True,
+            )
+            output = layer.norm2(output + layer.dropout2(cross_output))
+            last_attention = attention
+
+            feed_forward = layer.linear2(
+                layer.dropout(layer.activation(layer.linear1(output)))
+            )
+            dropout3 = getattr(layer, "dropout3", None)
+            if dropout3 is not None:
+                feed_forward = dropout3(feed_forward)
+            output = layer.norm3(output + feed_forward)
+
+        if last_attention is None:
+            return None
+        return last_attention[0].detach().cpu().float().tolist()
+
+    def beam_search_candidates(
+        self,
+        src,
+        sos_idx,
+        eos_idx,
+        beam_width=8,
+        max_len=120,
+        return_attention=False,
+    ):
         device = src.device
         src_padding_mask = src == self.pad_idx
         # src_emb = self.positional_encoding(self.embedding(src))
@@ -245,7 +302,23 @@ class Seq2SeqTransformer(nn.Module):
         all_results = finished + [(seq, score) for seq, score in beams]
         if not all_results:
             return []
-        return sorted(all_results, key=lambda x: x[1], reverse=True)
+
+        all_results = sorted(all_results, key=lambda x: x[1], reverse=True)
+        if not return_attention:
+            return all_results
+
+        return [
+            (
+                sequence,
+                score,
+                self._get_sequence_attention(
+                    memory,
+                    src_padding_mask,
+                    sequence,
+                ),
+            )
+            for sequence, score in all_results
+        ]
 
     def greedy_decode(self, src, sos_idx, eos_idx, max_len=120):
         device = src.device
