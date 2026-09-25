@@ -78,6 +78,33 @@ class ProtocolGenerationTests(unittest.TestCase):
         ElementTree.fromstring(xdl)
         self.assertIn("Brc1ccc(Br)nc1", xdl)
 
+    def test_mapped_reactants_are_unmapped_in_steps_and_xdl(self):
+        steps, _ = reaction_to_draft_protocol(
+            "[CH3:1]O.[OH:2]",
+            product_smiles="[CH3:1][OH:2]",
+        )
+        xdl = protocol_to_xdl(steps, run_name="mapped_smiles_test")
+
+        self.assertEqual(steps[0]["reagent"], "[CH3]O")
+        self.assertEqual(steps[1]["reagent"], "[OH]")
+        self.assertNotRegex(xdl, r":\d+\]")
+        ElementTree.fromstring(xdl)
+
+    def test_protocol_to_xdl_strips_maps_from_recipe_fields(self):
+        steps = [{
+            "action": "transfer",
+            "reagent": "[CH3:7]O",
+            "volume_ml": 1.0,
+            "destination": "vial_1",
+            "source_text": "add [CH3:7]O 1ml to vial 1",
+        }]
+
+        xdl = protocol_to_xdl(steps, run_name="recipe_map_test")
+
+        self.assertIn('reagent="[CH3]O"', xdl)
+        self.assertIn("add [CH3]O 1ml to vial 1", xdl)
+        self.assertNotRegex(xdl, r":\d+\]")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -71,8 +71,8 @@ class ForwardPredictionAlignmentTests(unittest.TestCase):
 
         self.assertEqual(beam_search.call_args.args[1].tolist(), [[4, 5]])
         self.assertFalse(":" in result["prediction"])
-        self.assertEqual(result["source_tokens"], ["[CH3]", "[OH]"])
-        self.assertEqual(result["target_tokens"], ["[CH3]", "[OH]"])
+        self.assertEqual(result["source_tokens"], ["C", "O"])
+        self.assertEqual(result["target_tokens"], ["C", "O"])
         self.assertEqual(
             result["attention_weights"],
             [[0.1], [0.2]],

@@ -36,6 +36,32 @@ class ExplanationTests(unittest.TestCase):
         self.assertFalse(result["attention_summary"]["available"])
         self.assertEqual(result["reaction_class"], "unclassified transformation")
 
+    def test_displayed_explanation_uses_unmapped_smiles_and_tokens(self):
+        result = explain_prediction(
+            "[Br:1]c1ccccc1.CN(C)C=O",
+            "[O:2]=[CH:3]c1ccccc1",
+            source_tokens=["[Br:1]", "c", "CN(C)C=O"],
+            target_tokens=["[O:2]", "=", "[CH:3]"],
+            attention_weights=[
+                [0.8, 0.1, 0.1],
+                [0.1, 0.8, 0.1],
+                [0.1, 0.1, 0.8],
+            ],
+        )
+
+        self.assertEqual(result["llm_input"]["reactants"], "[Br]c1ccccc1.CN(C)C=O")
+        self.assertEqual(result["llm_input"]["product"], "[O]=[CH]c1ccccc1")
+        self.assertEqual(
+            [link["target_token"] for link in result["attention_summary"]["target_token_links"]],
+            ["[O]", "=", "[CH]"],
+        )
+        displayed_text = (
+            result["explanation"]
+            + str(result["llm_input"])
+            + str(result["attention_summary"])
+        )
+        self.assertNotRegex(displayed_text, r":\d+\]")
+
 
 if __name__ == "__main__":
     unittest.main()

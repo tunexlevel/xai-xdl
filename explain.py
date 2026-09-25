@@ -1,6 +1,8 @@
 import re
 from typing import Any
 
+from helper.utils import strip_atom_mapping_labels
+
 
 REACTION_CUES = (
     ("aryl formylation", ("CN(C)C=O",), ("Br", "Cl", "I")),
@@ -20,8 +22,14 @@ def explain_prediction(
     attention_weights: Any = None,
 ) -> dict[str, Any]:
     """Build an evidence-first, LLM-ready explanation for one prediction."""
-    source_tokens = list(source_tokens or [])
-    target_tokens = list(target_tokens or [])
+    reactant_smiles = strip_atom_mapping_labels(reactant_smiles)
+    product_smiles = strip_atom_mapping_labels(product_smiles)
+    source_tokens = [
+        strip_atom_mapping_labels(token) for token in (source_tokens or [])
+    ]
+    target_tokens = [
+        strip_atom_mapping_labels(token) for token in (target_tokens or [])
+    ]
     reaction_class, class_confidence, class_evidence = _infer_reaction_class(
         reactant_smiles,
         product_smiles,

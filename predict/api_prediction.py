@@ -17,6 +17,7 @@ from helper.utils import (
     strip_atom_mapping_labels,
     tokenize_smiles,
     valid_smiles_or_empty,
+    strip_atom_mapping,
 )
 import re
 from functools import lru_cache
@@ -222,7 +223,18 @@ def _run_beam_search(model, src_tensor, sos_idx, eos_idx, top_k, max_len):
             beam_width=top_k,
             max_len=max_len,
         )
+def _remove_atom_mapping_labels(smiles):
+    return strip_atom_mapping_labels(smiles)
 
+def _prepare_display_smiles(decoded_smiles):
+    unmapped_smiles = _remove_atom_mapping_labels(decoded_smiles)
+    unmapped_tokens = tokenize_smiles(unmapped_smiles)
+    display_smiles = strip_atom_mapping(decoded_smiles, canonical=False)
+    display_tokens = tokenize_smiles(display_smiles)
+
+    if len(display_tokens) != len(unmapped_tokens):
+        return unmapped_smiles, unmapped_tokens
+    return display_smiles, display_tokens
 
 def _remove_atom_mapping(smiles):
     """Remove atom-map numbers from predicted SMILES."""
@@ -290,10 +302,11 @@ def predict_product(
     )
     
     model_tokens = tokenize_smiles(reactant_smiles)
-    source_tokens = [
-        strip_atom_mapping_labels(token)
-        for token in model_tokens
-    ]
+    # source_tokens = [
+    #     strip_atom_mapping_labels(token)
+    #     for token in model_tokens
+    # ]
+    source_tokens = tokenize_smiles(strip_atom_mapping(reactant_smiles, canonical=False))
     if not model_tokens:
         return []
 
@@ -346,9 +359,12 @@ def predict_product(
         if not smiles:
             continue
 
-        target_tokens = [
-            strip_atom_mapping_labels(token) for token in decoded_tokens
-        ]
+        # target_tokens = [
+        #     strip_atom_mapping_labels(token) for token in decoded_tokens
+        # ]
+        
+        smiles, target_tokens = _prepare_display_smiles(smiles)
+        
         attention_weights = _trim_special_attention_rows(
             attention_weights,
             len(target_tokens),

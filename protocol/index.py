@@ -6,6 +6,8 @@ from typing import Any
 from xml.etree import ElementTree
 from xml.sax.saxutils import escape, quoteattr
 
+from helper.utils import strip_atom_mapping_labels, strip_atom_mapping
+
 
 WHEEL_ACTIONS = {
     "transfer",
@@ -21,6 +23,21 @@ WHEEL_ACTIONS = {
     "start_video",
     "stop_video",
 }
+
+
+def _strip_protocol_atom_maps(value: Any) -> Any:
+    if isinstance(value, str):
+        return strip_atom_mapping(value, canonical=False)
+    if isinstance(value, list):
+        return [_strip_protocol_atom_maps(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_strip_protocol_atom_maps(item) for item in value)
+    if isinstance(value, dict):
+        return {
+            key: _strip_protocol_atom_maps(item)
+            for key, item in value.items()
+        }
+    return value
 
 
 def read_config() -> dict[str, Any]:
@@ -57,6 +74,7 @@ def recipe_to_protocol(recipe_text: str) -> list[dict[str, Any]]:
         raise ValueError(
             "Could not parse recipe line(s): " + "; ".join(unsupported)
         )
+    protocol = _strip_protocol_atom_maps(protocol)
     validate_protocol(protocol)
     return protocol
 
@@ -71,6 +89,7 @@ def reaction_to_draft_protocol(
     if not isinstance(reactant_smiles, str) or not reactant_smiles.strip():
         raise ValueError("Reactant SMILES must be a non-empty string.")
 
+    reactant_smiles = strip_atom_mapping(reactant_smiles, canonical=False)
     components = [component.strip() for component in reactant_smiles.split(".")]
     components = [component for component in components if component]
     if not components:
@@ -106,6 +125,7 @@ def reaction_to_draft_protocol(
             "source_text": "measure spectrum vial 1",
         },
     ])
+    steps = _strip_protocol_atom_maps(steps)
     validate_protocol(steps)
     warnings = [
         "Draft protocol generated from SMILES because recipe_text was not supplied.",
@@ -230,6 +250,7 @@ def ai_recipe_to_protocol(recipe_text: str) -> list[dict[str, Any]]:
             payload = _run_ai_text(prompt, timeout)
             protocol.extend(_normalize_protocol(payload, line))
 
+    protocol = _strip_protocol_atom_maps(protocol)
     validate_protocol(protocol)
     return protocol
 
@@ -1271,6 +1292,7 @@ def protocol_to_xdl(
     run_name: str = "from_gui",
     include_source_comments: bool = True,
 ) -> str:
+    protocol = _strip_protocol_atom_maps(protocol)
     validate_protocol(protocol)
     reagents = _infer_reagents(protocol)
     lines: list[str] = ["<XDL>", "  <Synthesis>", f'    <Metadata description="{run_name}" />', "    <Hardware>"]

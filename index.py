@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from helper.utils import strip_atom_mapping_labels
 from predict.api_prediction import predict_product, _remove_atom_mapping
 from predict.api_prediction_retro import (
     _remove_atom_mapping_labels,
@@ -387,7 +388,7 @@ def retrosynthesis_prediction():
         for prediction in predictions:
             prediction["protocol"] = {
                 **protocol,
-                "product_smiles": product_smiles,
+                "product_smiles": strip_atom_mapping_labels(product_smiles),
             }
         response["protocol"] = protocol
 
