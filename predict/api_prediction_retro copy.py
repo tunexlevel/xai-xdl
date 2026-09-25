@@ -129,14 +129,15 @@ def _round_nested(value, decimals=4):
     return value
 
 
-def _trim_special_attention_rows(attention_weights, target_length):
-    if not isinstance(attention_weights, list):
+def _trim_special_attention_rows(attention_weights, sequence, sos_idx, eos_idx):
+    if not isinstance(attention_weights, list) or not isinstance(sequence, list):
         return attention_weights
-    return attention_weights[:target_length]
+    if len(attention_weights) != len(sequence):
+        return attention_weights
 
-
-def _remove_atom_mapping_preserve_order(smiles):
-    return re.sub(r":\d+(?=\])", "", smiles)
+    start = 1 if sequence and sequence[0] == sos_idx else 0
+    end = -1 if sequence and sequence[-1] == eos_idx else None
+    return attention_weights[start:end]
 
 
 def predict_reactants(
@@ -185,6 +186,14 @@ def predict_reactants(
     for sequence, score, attention_weights in beam_candidates:
         if isinstance(sequence, torch.Tensor):
             sequence = sequence.detach().cpu().tolist()
+        attention_weights = _round_nested(
+            _trim_special_attention_rows(
+                attention_weights,
+                sequence,
+                bundle["sos_idx"],
+                bundle["eos_idx"],
+            ),
+        )
         decoded_tokens = decode_indices(
             sequence,
             bundle["idx2token"],
@@ -192,27 +201,23 @@ def predict_reactants(
             bundle["eos_idx"],
             bundle["pad_idx"],
         )
-        decoded_smiles = "".join(decoded_tokens)
-        canonical_smiles = valid_smiles_or_empty(decoded_smiles)
-        if not canonical_smiles:
+        smiles = valid_smiles_or_empty("".join(decoded_tokens))
+        
+        decoded_tokens2 = tokenize_smiles(strip_atom_mapping(smiles, canonical=False))
+        if not smiles:
             continue
-
-        smiles = _remove_atom_mapping_preserve_order(decoded_smiles)
-        target_tokens = tokenize_smiles(smiles)
-        attention_weights = _round_nested(
-            _trim_special_attention_rows(attention_weights, len(target_tokens)),
-        )
-        canonical_prediction = strip_atom_mapping(canonical_smiles, canonical=True)
-        if not smiles or canonical_prediction in seen:
+        print(smiles)
+        smiles = strip_atom_mapping(smiles, canonical=False)
+        if not smiles or smiles in seen:
             continue
-        seen.add(canonical_prediction)
+        seen.add(smiles)
+        # print(smiles)
         candidates.append({
             "prediction": smiles,
-            "canonical_prediction": canonical_prediction,
             "score": float(score),
             "attention_weights": attention_weights,
             "source_tokens": tokens2,
-            "target_tokens": target_tokens,
+            "target_tokens": decoded_tokens2,
             "model": file_name,
             "mapped_input": bundle["mapped"],
         })
