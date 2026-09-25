@@ -56,7 +56,6 @@ def _is_mapped_model(file_name):
 def _prepare_product(smiles, mapped):
     smiles = map_smiles(smiles)
     smiles = get_single_root_aligned_pair(smiles)
-    
     return smiles
 
 
@@ -68,8 +67,8 @@ def _num_layers_from_file_name(file_name):
 @lru_cache(maxsize=8)
 def _load_model(file_name):
     file_name = _safe_file_name(file_name)
-    model_stem = f"{file_name}_1"
-    model_path = ROOT / "pt" / "dump" / f"{file_name}_2_reaction_model.pt"
+    model_stem = f"{file_name}"
+    model_path = ROOT / "pt" / "dump" / f"{file_name}_reaction_model.pt"
     token2idx_path = ROOT / "tokens" / "dump" / f"{model_stem}_token2idx.json"
     idx2token_path = ROOT / "tokens" / "dump" / f"{model_stem}_idx2token.json"
 
@@ -145,7 +144,6 @@ def predict_reactants(
     product_smiles,
     top_k=5,
     max_len=120,
-    target_smiles=None,
     file_name=DEFAULT_FILE_NAME,
 ):
     if not isinstance(product_smiles, str) or not product_smiles.strip():
@@ -204,13 +202,16 @@ def predict_reactants(
             bundle["pad_idx"],
         )
         smiles = valid_smiles_or_empty("".join(decoded_tokens))
+        
         decoded_tokens2 = tokenize_smiles(strip_atom_mapping(smiles, canonical=False))
         if not smiles:
             continue
-        smiles = strip_atom_mapping(smiles)
+        print(smiles)
+        smiles = strip_atom_mapping(smiles, canonical=False)
         if not smiles or smiles in seen:
             continue
         seen.add(smiles)
+        # print(smiles)
         candidates.append({
             "prediction": smiles,
             "score": float(score),
@@ -231,7 +232,7 @@ def predict_reactants(
 
 
 def main(
-    product_smiles="O=C(O[C:1](=[O:2])[C:3]([F:4])([F:5])[F:6])C(F)(F)F.[NH2:7][CH2:8][c:9]1[cH:10][cH:11][cH:12][cH:13][c:14]1[S:15](=[O:16])(=[O:17])[CH:18]1[CH2:19][CH2:20]1",
+    product_smiles,
     top_k=5,
     max_len=120,
     target_smiles=None,
@@ -244,9 +245,10 @@ def main(
         #uspto50k_unmapped_lr_5e-4
         #uspto50k_mapped_lr_5e-4
         #uspto50k_mapped_lr_3e-4
+        file_name='uspto50k_mapped_retro_3-4'
     )
 
-    print(f"Predictions for {product_smiles}:")
+    print(f"Predictions for {strip_atom_mapping(product_smiles)}:")
     for i, result in enumerate(predictions):
         print(f"{i + 1}. {result['prediction']} (confidence: {result['confidence']})")  
         
@@ -257,6 +259,5 @@ if __name__ == "__main__":
     if not input_smiles:
         print("No input provided. Using default product SMILES.")
         input_smiles = "[C:1](=[O:2])([CH2:3][c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[NH:14][c:13]1[n:12][c:11]([CH3:10])[c:16]([C:17](=[O:18])[NH:19][CH2:20][c:21]2[cH:22][cH:23][cH:24][cH:25][cH:26]2)[s:15]1"
-        input_smiles = get_single_root_aligned_pair(input_smiles)
         # print(input_smiles)
     main(product_smiles=input_smiles, top_k=10)
