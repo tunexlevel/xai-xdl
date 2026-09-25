@@ -1,6 +1,9 @@
 from flask import Flask, jsonify, request
 from predict.api_prediction import predict_product, _remove_atom_mapping
-from predict.api_prediction_retro import predict_reactants
+from predict.api_prediction_retro import (
+    _remove_atom_mapping_labels,
+    predict_reactants,
+)
 from explain import explain_prediction
 from protocol.index import (
     protocol_to_xdl,
@@ -67,6 +70,16 @@ def _normalise_predictions(raw_predictions, top_k):
         if prediction is None:
             continue
 
+        prediction = _remove_atom_mapping_labels(str(prediction))
+        if isinstance(source_tokens, list):
+            source_tokens = [
+                _remove_atom_mapping_labels(token) for token in source_tokens
+            ]
+        if isinstance(target_tokens, list):
+            target_tokens = [
+                _remove_atom_mapping_labels(token) for token in target_tokens
+            ]
+
         try:
             weight = float(weight) if weight is not None else None
         except (TypeError, ValueError):
@@ -78,7 +91,7 @@ def _normalise_predictions(raw_predictions, top_k):
             confidence = None
 
         results.append({
-            "prediction": str(prediction),
+            "prediction": prediction,
             "weight": weight,
             "confidence": confidence,
             "attention_weights": attention_weights,

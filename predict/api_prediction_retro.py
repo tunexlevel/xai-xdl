@@ -135,8 +135,19 @@ def _trim_special_attention_rows(attention_weights, target_length):
     return attention_weights[:target_length]
 
 
-def _remove_atom_mapping_preserve_order(smiles):
+def _remove_atom_mapping_labels(smiles):
     return re.sub(r":\d+(?=\])", "", smiles)
+
+
+def _prepare_display_smiles(decoded_smiles):
+    unmapped_smiles = _remove_atom_mapping_labels(decoded_smiles)
+    unmapped_tokens = tokenize_smiles(unmapped_smiles)
+    display_smiles = strip_atom_mapping(decoded_smiles, canonical=False)
+    display_tokens = tokenize_smiles(display_smiles)
+
+    if len(display_tokens) != len(unmapped_tokens):
+        return unmapped_smiles, unmapped_tokens
+    return display_smiles, display_tokens
 
 
 def predict_reactants(
@@ -197,8 +208,7 @@ def predict_reactants(
         if not canonical_smiles:
             continue
 
-        smiles = _remove_atom_mapping_preserve_order(decoded_smiles)
-        target_tokens = tokenize_smiles(smiles)
+        smiles, target_tokens = _prepare_display_smiles(decoded_smiles)
         attention_weights = _round_nested(
             _trim_special_attention_rows(attention_weights, len(target_tokens)),
         )
