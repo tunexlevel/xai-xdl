@@ -180,7 +180,25 @@ print(f"Dataset: {FILE_PATH}")
 
 raw_df = load_uspto_file(FILE_PATH)
 
-aligned_df = prepare_rsmiles_dataframe(raw_df, augment_times=1)
+ALIGNMENT_AUGMENT_TIMES = 1
+source_path = Path(FILE_PATH)
+ALIGNMENT_CACHE = source_path.with_name(
+    f"{source_path.stem}_root_aligned_aug{ALIGNMENT_AUGMENT_TIMES}.csv"
+)
+
+if ALIGNMENT_CACHE.exists():
+    print(f"Loading aligned data from cache: {ALIGNMENT_CACHE}")
+    aligned_df = load_uspto_file(ALIGNMENT_CACHE)
+else:
+    aligned_df = None
+
+if aligned_df is None:
+    print(f"Creating aligned data cache: {ALIGNMENT_CACHE}")
+    aligned_df = prepare_rsmiles_dataframe(
+        raw_df,
+        augment_times=ALIGNMENT_AUGMENT_TIMES
+    )
+    aligned_df.to_csv(ALIGNMENT_CACHE, index=False)
 
 print(
     f"Number of reactions loaded: {len(aligned_df):,}"
