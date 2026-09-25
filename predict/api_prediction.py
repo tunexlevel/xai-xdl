@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
 from mod.model import Seq2SeqTransformer
 from helper.utils import (
     decode_indices,
+    strip_atom_mapping_labels,
     tokenize_smiles,
     valid_smiles_or_empty,
 )
@@ -254,17 +255,11 @@ def _normalise_scores(scores):
     ]
 
 
-def _trim_special_attention_rows(attention_weights, sequence, sos_idx, eos_idx):
-    """Align attention rows with target tokens by removing SOS/EOS rows."""
-    if not isinstance(attention_weights, list) or not isinstance(sequence, list):
+def _trim_special_attention_rows(attention_weights, target_length):
+    """Keep decoder rows that predict target tokens, starting with the SOS row."""
+    if not isinstance(attention_weights, list):
         return attention_weights
-
-    if len(attention_weights) != len(sequence):
-        return attention_weights
-
-    start = 1 if sequence and sequence[0] == sos_idx else 0
-    end = -1 if sequence and sequence[-1] == eos_idx else None
-    return attention_weights[start:end]
+    return attention_weights[:target_length]
 
 
 def predict_product(
@@ -294,8 +289,12 @@ def predict_product(
         mapped=bundle["mapped"],
     )
     
-    tokens = tokenize_smiles(reactant_smiles)
-    if not tokens:
+    model_tokens = tokenize_smiles(reactant_smiles)
+    source_tokens = [
+        strip_atom_mapping_labels(token)
+        for token in model_tokens
+    ]
+    if not model_tokens:
         return []
 
     src_ids = [
@@ -305,7 +304,7 @@ def predict_product(
             if bundle["unk_idx"] is not None
             else bundle["pad_idx"],
         )
-        for token in tokens
+        for token in model_tokens
     ]
 
     src_tensor = torch.tensor(
@@ -343,16 +342,17 @@ def predict_product(
             bundle["eos_idx"],
             bundle["pad_idx"],
         )
-        attention_weights = _trim_special_attention_rows(
-            attention_weights,
-            sequence,
-            bundle["sos_idx"],
-            bundle["eos_idx"],
-        )
-
         smiles = valid_smiles_or_empty("".join(decoded_tokens))
         if not smiles:
             continue
+
+        target_tokens = [
+            strip_atom_mapping_labels(token) for token in decoded_tokens
+        ]
+        attention_weights = _trim_special_attention_rows(
+            attention_weights,
+            len(target_tokens),
+        )
         
         # Always expose unmapped predictions through the API.
         smiles = _remove_atom_mapping(smiles)
@@ -370,8 +370,8 @@ def predict_product(
             "prediction": smiles,
             "score": score,
             "attention_weights": attention_weights,
-            "source_tokens": tokens,
-            "target_tokens": decoded_tokens,
+            "source_tokens": source_tokens,
+            "target_tokens": target_tokens,
         })
 
         if len(candidates) >= top_k:

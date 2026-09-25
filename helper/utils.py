@@ -106,6 +106,13 @@ def tokenize_smiles(smiles: str):
     return tokens
 
 
+def strip_atom_mapping_labels(smiles: str):
+    """Remove atom-map labels textually without changing SMILES token order."""
+    if not isinstance(smiles, str):
+        return smiles
+    return re.sub(r":\d+(?=\])", "", smiles)
+
+
 
 def strip_atom_mapping(smi: str, canonical=True):
     """

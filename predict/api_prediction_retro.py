@@ -20,7 +20,8 @@ from helper.utils import (
     valid_smiles_or_empty,
     get_single_root_aligned_pair,
     _canonicalize_reactants,
-    canonicalize_preserve_molecule_order
+    canonicalize_preserve_molecule_order,
+    strip_atom_mapping_labels,
 )
 from mod.model_retro import Seq2SeqTransformer
 
@@ -136,7 +137,7 @@ def _trim_special_attention_rows(attention_weights, target_length):
 
 
 def _remove_atom_mapping_labels(smiles):
-    return re.sub(r":\d+(?=\])", "", smiles)
+    return strip_atom_mapping_labels(smiles)
 
 
 def _prepare_display_smiles(decoded_smiles):
