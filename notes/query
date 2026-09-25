@@ -337,3 +337,20 @@ Then aggregate only for display. Preserve the raw tensor for analysis.
 8. Add attention/counterfactual explanations to the existing prediction API.
 
 The most important design principle is: **the reaction model predicts chemistry; the protocol system plans operations; validators decide what is executable.** The LLM should assist with planning and language, but it should never be the final authority for chemical quantities or robot execution.
+
+
+I want to incorporate a large language model that would assit with the following:
+1. Generate steps in text to prepare the predicted valid outcome, specify the chemicals needed, quantity, temperature and all necessary parameters, that I can pass to a function to convert it to xdl
+    example of a text steps:
+    Examples:
+    add aniline 1.0ml to vial 1
+    wash vial 1 with water 2ml x2
+    stir vial 1, vial 2 for 10s at medium
+    capture dark spectrum
+    capture reference spectrum vial 24
+    measure spectrum vial 3
+
+2. Interpret or explain attention weights generated to the chemist so they can have an understand of how the system reasons and help them to relate with the system more easily.
+
+
+Suggest ways to achieve the above.
