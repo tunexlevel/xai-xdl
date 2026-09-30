@@ -43,18 +43,18 @@ HIDDEN_DIM = 512
 
 MAX_LEN = 160
 
-EPOCHS = 30
+EPOCHS = 20
 
 LEARNING_RATE = 0.0006
 
 PAD_TOKEN = "<pad>"
 
-DATASET_NAME = "reactant_product_multi_reactant_mapped"
+DATASET_NAME = "uspto50k_mapped_default"
 
 FILE_NAME = f"{DATASET_NAME}_retro" 
 
 # Google Drive dataset
-FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/reactant_product_multi_reactant_mapped.csv"
+FILE_PATH = "/content/drive/MyDrive/Colab Notebooks/uspto50k_mapped.csv"
 
 HEADS = 8
 
@@ -180,32 +180,13 @@ print(f"Dataset: {FILE_PATH}")
 
 raw_df = load_uspto_file(FILE_PATH)
 
-ALIGNMENT_AUGMENT_TIMES = 1
-source_path = Path(FILE_PATH)
-ALIGNMENT_CACHE = source_path.with_name(
-    f"{source_path.stem}_root_aligned_aug{ALIGNMENT_AUGMENT_TIMES}.csv"
-)
-
-if ALIGNMENT_CACHE.exists():
-    print(f"Loading aligned data from cache: {ALIGNMENT_CACHE}")
-    aligned_df = load_uspto_file(ALIGNMENT_CACHE)
-else:
-    aligned_df = None
-
-if aligned_df is None:
-    print(f"Creating aligned data cache: {ALIGNMENT_CACHE}")
-    aligned_df = prepare_rsmiles_dataframe(
-        raw_df,
-        augment_times=ALIGNMENT_AUGMENT_TIMES
-    )
-    aligned_df.to_csv(ALIGNMENT_CACHE, index=False)
 
 print(
-    f"Number of reactions loaded: {len(aligned_df):,}"
+    f"Number of reactions loaded: {len(raw_df):,}"
 )
 
 print(
-    f"Columns: {list(aligned_df.columns)}"
+    f"Columns: {list(raw_df.columns)}"
 )
 
 
@@ -220,7 +201,7 @@ required_columns = [
 
 for column in required_columns:
 
-    if column not in aligned_df.columns:
+    if column not in raw_df.columns:
 
         raise ValueError(
             f"Required column '{column}' "
@@ -230,12 +211,12 @@ for column in required_columns:
 
 print(
     f"Reactant examples: "
-    f"{aligned_df['reactants'].head(2).tolist()}"
+    f"{raw_df['reactants'].head(2).tolist()}"
 )
 
 print(
     f"Product examples: "
-    f"{aligned_df['products'].head(2).tolist()}"
+    f"{raw_df['products'].head(2).tolist()}"
 )
 
 
@@ -249,9 +230,9 @@ print("BUILDING VOCABULARY")
 print("=" * 70)
 
 all_smiles = (
-    aligned_df["reactants"].tolist()
+    raw_df["reactants"].tolist()
     +
-    aligned_df["products"].tolist()
+    raw_df["products"].tolist()
 )
 
 token2idx, idx2token = build_vocab(
@@ -328,7 +309,7 @@ print("CREATING DATASET")
 print("=" * 70)
 
 dataset = ReactionDataset(
-    aligned_df,
+    raw_df,
     token2idx,
     max_len=MAX_LEN,
     retrosynthesis=RETROSYNTHESIS

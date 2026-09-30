@@ -17,23 +17,23 @@ from helper.data_loader import load_uspto_file
 from helper.utils import build_vocab, tokenize_smiles
 from helper.dataset import ReactionDataset
 from helper.rsmile_dataframe import prepare_rsmiles_dataframe
-from mod.model import Seq2SeqTransformer
+from mod.model_retro import Seq2SeqTransformer
 from tqdm import tqdm
 import math
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 
 # Hyperparameters
-BATCH_SIZE = 16
+BATCH_SIZE = 3
 EMB_DIM = 256
 HIDDEN_DIM = 512
 MAX_LEN = 160
 EPOCHS = 20
 LEARNING_RATE = 0.0007 #6 best
 PAD_TOKEN = "<pad>"
-DATASET_NAME = "uspto50k_mapped"
-FILE_NAME = f"{DATASET_NAME}_retro_3-3" 
-FILE_PATH = "data/raw/uspto50k_mapped.csv" #ROOT / "data" / "raw" / "train-data" /  f"{DATASET_NAME}.csv"
+DATASET_NAME = "reactant_product_multi_reactant_mapped"
+FILE_NAME = f"{DATASET_NAME}_3-3" 
+FILE_PATH = "data/raw/final/reactant_product_multi_reactant_mapped.csv" #ROOT / "data" / "raw" / "train-data" /  f"{DATASET_NAME}.csv"
 HEADS = 8
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
@@ -49,6 +49,8 @@ print('' + '=' * len(start_message))
 
 # Load data
 raw_df = load_uspto_file(FILE_PATH)
+
+raw_df = raw_df.iloc[:10].copy()
 
 ALIGNMENT_AUGMENT_TIMES = 1
 source_path = Path(FILE_PATH)
@@ -70,6 +72,8 @@ if aligned_df is None:
     )
     aligned_df.to_csv(ALIGNMENT_CACHE, index=False)
 
+# aligned_df = raw_df
+
 all_smiles = aligned_df['reactants'].tolist() + aligned_df['products'].tolist()
 
 # Build vocabulary
@@ -83,7 +87,7 @@ with open(ROOT / "tokens" / f"{FILE_NAME}_idx2token.json", "w") as f:
     json.dump(idx2token, f)
     
 
-small_df = aligned_df.iloc[:1000].copy()
+small_df = aligned_df.iloc[:10].copy()
 
 
 # Dataset & DataLoader
@@ -109,8 +113,8 @@ criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 optimizer = Adam(
     model.parameters(),
     lr=LEARNING_RATE,
-    betas=(0.9, 0.98),
-    eps=1e-9
+    # betas=(0.9, 0.98),
+    # eps=1e-9
 )
 
 # -----------------------------
@@ -126,7 +130,7 @@ def lr_lambda(current_step: int):
     # Decay phase: scales down as 1 / sqrt(step)
     return min(step ** -0.5, step * (WARMUP_STEPS ** -1.5)) * (WARMUP_STEPS ** 0.5)
 
-scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
+# scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
 
 start_time = time.time()
 
@@ -188,9 +192,9 @@ for epoch in range(EPOCHS):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
         optimizer.step()
-        scheduler.step()  # <--- Step per batch to advance warmup/decay
+        # scheduler.step()  # <--- Step per batch to advance warmup/decay
         
-        current_lr = scheduler.get_last_lr()[0]
+        # current_lr = scheduler.get_last_lr()[0]
         total_loss += loss.item()
 
         # -----------------------------
@@ -239,7 +243,7 @@ for epoch in range(EPOCHS):
 
         pbar.set_postfix(
             loss=f"{loss.item():.4f}",
-            lr=f"{current_lr:.6f}"
+            # lr=f"{current_lr:.6f}"
         )
 
     # =============================

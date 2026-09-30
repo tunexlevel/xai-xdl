@@ -257,6 +257,9 @@ def get_root_aligned_pair(product_mapped_smi: str, reactant_mapped_smi: str, aug
     strip_regex = re.compile(r':\d+')
     prod_final = strip_regex.sub('', prod_rooted)
     reac_final = strip_regex.sub('', reac_rooted)
+    
+    # prod_final = strip_atom_mapping(prod_rooted, canonical=False)
+    # reac_final = strip_atom_mapping(reac_rooted, canonical=False)
 
     return prod_final, reac_final
 
