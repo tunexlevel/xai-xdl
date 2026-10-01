@@ -23,7 +23,8 @@ from helper.utils import (
     canonicalize_preserve_molecule_order,
     strip_atom_mapping_labels,
 )
-from mod.model_retro import Seq2SeqTransformer
+from mod.model_retro import Seq2SeqTransformer as Transformer
+from mod.model import Seq2SeqTransformer as Sp2
 
 
 warnings.filterwarnings(
@@ -37,6 +38,7 @@ RDLogger.DisableLog("rdApp.warning")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEFAULT_FILE_NAME = "uspto50k_mapped_retro_3-3"
+SPECIAL_MODEL = 'uspto50k_mapped_default_retro'
 
 
 def _safe_file_name(file_name):
@@ -54,9 +56,10 @@ def _is_mapped_model(file_name):
     return "unmapped" not in file_name.lower().replace("-", "_")
 
 
-def _prepare_product(smiles, mapped):
+def _prepare_product(smiles, file_name):
     smiles = map_smiles(smiles)
-    smiles = get_single_root_aligned_pair(smiles)
+    if file_name != SPECIAL_MODEL:
+        smiles = get_single_root_aligned_pair(smiles)
     return smiles
 
 
@@ -80,7 +83,12 @@ def _load_model(file_name):
 
     pad_idx = model_token2idx.get("<pad>", 0)
     layers = _num_layers_from_file_name(file_name)
-    model = Seq2SeqTransformer(
+    
+    X = Transformer
+    if model_stem == SPECIAL_MODEL:
+        X = Sp2
+    
+    model = X(
         input_dim=len(model_token2idx),
         output_dim=len(model_token2idx),
         emb_dim=256,
@@ -167,7 +175,7 @@ def predict_reactants(
     except (OSError, ValueError, RuntimeError, KeyError) as error:
         raise RuntimeError(f"Unable to load model '{file_name}': {error}") from error
 
-    product_smiles = _prepare_product(product_smiles.strip(), bundle["mapped"])
+    product_smiles = _prepare_product(product_smiles.strip(), file_name)
     tokens = tokenize_smiles(product_smiles)
     tokens2 = tokenize_smiles(strip_atom_mapping(product_smiles, canonical=False))
     if not tokens:

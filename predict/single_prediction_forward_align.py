@@ -33,7 +33,7 @@ RDLogger.DisableLog("rdApp.warning")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
 
-DATASET_NAME = "reactant_product_multi_reactant_mapped" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
+DATASET_NAME = "uspto50k_mapped_default_retro" # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 FILE_NAME = f"{DATASET_NAME}" 
 MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
@@ -511,7 +511,7 @@ def main(file_name):
         reactants, products = reaction.split(",")
         
         products = map_smiles(products)
-        products = get_single_root_aligned_pair(products)
+        # products = get_single_root_aligned_pair(products)
         
         beam_prediction = predict_reactants(products)
         beam_prediction = strip_atom_mapping(beam_prediction)
