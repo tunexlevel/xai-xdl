@@ -254,7 +254,7 @@ print(
 # SAVE VOCABULARY
 # ============================================================
 
-TOKEN_DIR = ROOT / "tokens"
+TOKEN_DIR = CHECKPOINT_DIR / "tokens"
 
 TOKEN_DIR.mkdir(
     parents=True,
