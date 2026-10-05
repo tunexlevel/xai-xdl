@@ -121,12 +121,29 @@ def _load_model(file_name):
         pad_idx=model_pad_idx,
     ).to(device)
 
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(
+    model_path,
+    map_location=device,
+    weights_only=True
+)
 
-    if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-        checkpoint = checkpoint["state_dict"]
+    if isinstance(checkpoint, dict):
+        if "model_state_dict" in checkpoint:
+            checkpoint = checkpoint["model_state_dict"]
+        elif "state_dict" in checkpoint:
+            checkpoint = checkpoint["state_dict"]
 
-    model.load_state_dict(checkpoint)
+    # Handle DataParallel checkpoints.
+    if checkpoint and all(
+        key.startswith("module.") for key in checkpoint
+    ):
+        checkpoint = {
+            key.removeprefix("module."): value
+            for key, value in checkpoint.items()
+        }
+
+    model.load_state_dict(checkpoint, strict=True)
+    model.to(device)
     model.eval()
 
     return {
