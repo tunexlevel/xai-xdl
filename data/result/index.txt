@@ -52,7 +52,7 @@ top1: 56.60% (Beam Width: 10)
 top3: 69.19% (Beam Width: 10)
 top5: 72.33% (Beam Width: 10)
 invalid_smiles: 100 - 95.52
-training_time: 11636.02 seconds.
+training_time: 1636.02 seconds.
 inference_time: 21467.07 seconds. (Beam Width: 10)
 inference_time: 379.34 seconds. (Beam Width: 1)
 duplicate: 205
@@ -127,7 +127,7 @@ training_token accuracy: 0.9596
 
 
 ==================================
-#Experiment 1_05: USPTO50K UNMAPPED * lr-3e-4
+#Experiment 1_05: USPTO50K MAPPED * lr-3e-4
 ==================================
 experiment_id: 05
 dataset: USPTO50K
@@ -284,9 +284,9 @@ training_token accuracy: 0.9829
 ==================================
 experiment_id: 10
 dataset: USPTO50K
-mapping: YES
-num_encoder_layers: 3
-num_decoder_layers: 3
+mapping: NO
+num_encoder_layers: 4
+num_decoder_layers: 4
 num_heads: 8
 embedding_dim: 256
 ffn_dim: 256
@@ -345,7 +345,7 @@ training_token accuracy: 0.1553
 ==================================
 experiment_id: 12
 dataset: USPTO50K
-mapping: YES
+mapping: NO
 num_encoder_layers: 6
 num_decoder_layers: 6
 num_heads: 8

@@ -46,13 +46,17 @@ device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
-FILE_NAME = "uspto50k_unmapped"
+DATASET = "uspto50k_unmapped"  # "ocrtrain" # "uspto_mit_mapped" # "uspto50k_unmapped" # "uspto50k_mapped"
 
-MODEL_PATH = ROOT / "pt" / f"{FILE_NAME}_reaction_model.pt"
+FILE_NAME = f"{DATASET}_ed_6-6"
 
-TOKEN2IDX_PATH = ROOT / "tokens" / f"{FILE_NAME}_token2idx.json"
+MODEL_PATH = ROOT / "pt" / "dump" / f"{FILE_NAME}_reaction_model.pt"
 
-IDX2TOKEN_PATH = ROOT / "tokens" / f"{FILE_NAME}_idx2token.json"
+TOKEN2IDX_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_token2idx.json"
+
+IDX2TOKEN_PATH = ROOT / "tokens" / "dump" / f"{FILE_NAME}_idx2token.json"
+
+OUTPUT_CSV_PATH = ROOT / "data" / "raw" / "accuracy" / f"{FILE_NAME}_accuracy_test_results.csv"
 
 
 # ============================================================
@@ -97,7 +101,7 @@ eos_idx = token2idx.get("<eos>", 2)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 N_HEADS = 8
-N_LAYERS = 3
+N_LAYERS = 6
 
 
 # ============================================================
@@ -126,13 +130,19 @@ model = Seq2SeqTransformer(
 
 
 try:
+    
+    
+    checkpoint = torch.load(MODEL_PATH, map_location=device)
 
-    model.load_state_dict(
-        torch.load(
-            MODEL_PATH,
-            map_location=device
-        )
-    )
+    # Extract model weights from the training checkpoint
+    if "model_state_dict" in checkpoint:
+        state_dict = checkpoint["model_state_dict"]
+    elif "state_dict" in checkpoint:
+        state_dict = checkpoint["state_dict"]
+    else:
+        state_dict = checkpoint
+
+    model.load_state_dict(state_dict)
 
     model.eval()
 
@@ -185,7 +195,7 @@ def _canonical_smiles(smiles):
 def predict_top_k(
     reactant_smiles,
     k=5,
-    max_len=120,
+    max_len=160,
     beam_width=10
 ):
     """
@@ -366,7 +376,17 @@ def test_prediction_accuracy(
     # Load CSV
     # --------------------------------------------------------
 
-    df = pd.read_csv(csv_path)
+    try:
+
+        df = pd.read_csv(csv_path)
+        
+    except FileNotFoundError:
+
+        print(
+            f"❌ Error: CSV file not found at {csv_path}"
+        )
+
+        sys.exit(1)
 
     # --------------------------------------------------------
     # Validate columns
@@ -733,13 +753,14 @@ def test_prediction_accuracy(
     )
 
     print("=" * 75)
-
-
+    
+    
+    
     # ========================================================
-    # RETURN METRICS
+    # SAVE DETAILED RESULTS
     # ========================================================
-
-    return {
+    
+    results = {
 
         "total": checked,
 
@@ -763,22 +784,43 @@ def test_prediction_accuracy(
 
     }
 
+    output_path = Path(output_csv)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    result_rows.append(results)
+    
+    results_df = pd.DataFrame(result_rows)
+    results_df.to_csv(output_path, index=False)
+
+    print(
+        f"\nDetailed results saved to: "
+        f"{output_csv}"
+    )
+
+
+    # ========================================================
+    # RETURN METRICS
+    # ========================================================
+
+    return results
+
 
 # ============================================================
 # MAIN
 # ============================================================
 
 if __name__ == "__main__":
-
     print(
-        "Starting prediction accuracy test..."
+        f"Starting prediction accuracy test for "
+        f"{FILE_NAME}"
     )
 
     start_time = time.time()
 
     metrics = test_prediction_accuracy(
 
-        csv_path=f"data/{FILE_NAME}_test.csv"
+        csv_path=f"data/{ 'uspto50k_unmapped' if DATASET == 'ocrtrain_unmapped' or DATASET == 'uspto_mit_unmapped' else DATASET }_test.csv",
+        output_csv=OUTPUT_CSV_PATH 
 
     )
 

@@ -37,8 +37,8 @@ RDLogger.DisableLog("rdApp.warning")
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DEFAULT_FILE_NAME = "uspto50k_mapped_retro_3-3"
-SPECIAL_MODEL = 'uspto50k_mapped_default_retro'
+DEFAULT_FILE_NAME = "uspto50k_mapped_rooted_retro_3-3"
+SPECIAL_MODEL = 'uspto50k_mapped_retro_3-3'
 
 
 def _safe_file_name(file_name):
